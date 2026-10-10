@@ -11,7 +11,7 @@ export default async function Pedidos({ searchParams }: { searchParams: Promise<
   const { estado, q } = await searchParams;
   const where: Prisma.OrderWhereInput = {
     ...(estado && ORDER_STATUS[estado] ? { status: estado } : { status: { not: "PENDING" } }),
-    ...(q ? { OR: [{ number: { contains: q.toUpperCase() } }, { email: { contains: q.toLowerCase() } }, { name: { contains: q } }] } : {}),
+    ...(q ? { OR: [{ number: { contains: q.toUpperCase(), mode: "insensitive" } }, { email: { contains: q.toLowerCase(), mode: "insensitive" } }, { name: { contains: q, mode: "insensitive" } }] } : {}),
   };
   const [orders, counts] = await Promise.all([
     db.order.findMany({ where, orderBy: { createdAt: "desc" }, take: 200, include: { items: true } }),

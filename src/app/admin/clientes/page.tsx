@@ -8,7 +8,7 @@ export const metadata = { title: "Clientes" };
 export default async function Clientes({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q } = await searchParams;
   const users = await db.user.findMany({
-    where: { role: "CUSTOMER", ...(q ? { OR: [{ email: { contains: q.toLowerCase() } }, { name: { contains: q } }] } : {}) },
+    where: { role: "CUSTOMER", ...(q ? { OR: [{ email: { contains: q.toLowerCase(), mode: "insensitive" } }, { name: { contains: q, mode: "insensitive" } }] } : {}) },
     orderBy: { createdAt: "desc" },
     take: 200,
     include: { orders: { where: { status: { in: ["PAID", "PREPARING", "SHIPPED", "DELIVERED"] } }, select: { total: true } } },

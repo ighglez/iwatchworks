@@ -1,6 +1,11 @@
 export const SITE = {
   name: "IWatchWorks",
-  url: (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, ""),
+  url: (
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "") ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "") ||
+    "http://localhost:3000"
+  ).replace(/\/$/, ""),
   email: "info@iwatchworks.com",
   whatsapp: process.env.NEXT_PUBLIC_WHATSAPP || "34600000000",
   // Datos fiscales para facturas y textos legales: complétalos antes de publicar.

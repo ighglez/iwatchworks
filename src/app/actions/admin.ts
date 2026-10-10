@@ -148,6 +148,10 @@ export async function saveProduct(_: AdminState, form: FormData): Promise<AdminS
   try {
     uploaded = await saveUploads(form.getAll("files").filter((f): f is File => f instanceof File));
   } catch (e) {
+    const code = (e as NodeJS.ErrnoException).code;
+    if (code === "EROFS" || code === "EACCES" || code === "ENOENT") {
+      return { error: "Este hosting no permite guardar archivos. Sube las fotos a Cloudinary y pega aquí sus enlaces." };
+    }
     return { error: (e as Error).message };
   }
   const images = [...parseImageUrls(String(form.get("images") || "")), ...uploaded];

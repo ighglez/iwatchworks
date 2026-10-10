@@ -32,7 +32,7 @@ export default async function Tienda({ searchParams }: { searchParams: SP }) {
     ...(categoria ? { category: categoria } : {}),
     ...(marca ? { brand: marca } : {}),
     ...(disponibles ? { stock: { gt: 0 } } : {}),
-    ...(q ? { OR: [{ name: { contains: q } }, { reference: { contains: q } }, { brand: { contains: q } }] } : {}),
+    ...(q ? { OR: [{ name: { contains: q, mode: "insensitive" } }, { reference: { contains: q, mode: "insensitive" } }, { brand: { contains: q, mode: "insensitive" } }] } : {}),
   };
 
   const [products, facets] = await Promise.all([

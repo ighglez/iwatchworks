@@ -1,10 +1,10 @@
-// Para producción: cambia provider a "postgresql" y DATABASE_URL a tu base de datos.
+// PostgreSQL (Neon / Vercel Postgres / Supabase). En local: DATABASE_URL="postgresql://…"
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

@@ -4,17 +4,28 @@ Tienda de relojes con la estética de iwatchworks.com (dorado `#C6A664` sobre ma
 
 ## Tecnología
 - **Next.js 15** (App Router, server actions) + **React 19** + **Tailwind CSS**
-- **Prisma** con SQLite en local (PostgreSQL recomendado en producción)
+- **Prisma** + **PostgreSQL** (Neon en Vercel)
 - **Stripe Checkout** para cobrar (tarjeta, Apple Pay, Google Pay). Sin claves, funciona una pasarela de demostración.
 
 ## Arrancar en local
 ```bash
 npm install
-cp .env.example .env        # y pon una ADMIN_PASSWORD
+cp .env.example .env        # pon DATABASE_URL (PostgreSQL) y una ADMIN_PASSWORD
 npm run setup               # crea la base de datos y carga los 4 relojes + el admin
 npm run dev                 # http://localhost:3000
 ```
 Admin: `http://localhost:3000/admin` con `ADMIN_EMAIL` / `ADMIN_PASSWORD` del `.env`.
+
+## Publicar en Vercel (enlace de prueba)
+1. En vercel.com → **Add New → Project** → importa el repositorio `iwatchworks`.
+2. Antes de pulsar Deploy, en **Environment Variables** añade:
+   - `ADMIN_EMAIL` y `ADMIN_PASSWORD` (mín. 10 caracteres): tu acceso al panel.
+   - `DEMO_PAYMENTS` = `true` (pagos simulados hasta conectar Stripe).
+3. Pulsa **Deploy**. Fallará por falta de base de datos: es normal.
+4. En el proyecto → **Storage → Create Database → Neon (Postgres)** → conéctala al proyecto (rellena `DATABASE_URL` sola).
+5. **Deployments → ⋯ → Redeploy**. El build crea las tablas y carga los relojes y el admin.
+
+Cada despliegue sincroniza la base de datos (`npm run vercel-build`). Las fotos se gestionan con enlaces de Cloudinary, porque Vercel no guarda archivos subidos.
 
 ## Activar Stripe (modo prueba)
 1. En dashboard.stripe.com (modo prueba) copia la clave `sk_test_…` a `STRIPE_SECRET_KEY`.
@@ -30,7 +41,6 @@ Las claves `sk_live_` están bloqueadas hasta definir `ALLOW_LIVE_PAYMENTS=true`
 - Emails: crea una cuenta en Resend y pon `RESEND_API_KEY` y `EMAIL_FROM`.
 - Catálogo PDF: coloca `public/catalogo-2025.pdf` y aparecerá el botón de descarga.
 - WhatsApp: `NEXT_PUBLIC_WHATSAPP`.
-- Base de datos: en `prisma/schema.prisma` cambia `provider` a `postgresql` y apunta `DATABASE_URL` a tu base (Neon, Supabase, Railway…).
 - Fotos subidas desde el admin se guardan en `UPLOAD_DIR` (por defecto `./data/uploads`); en hosting sin disco persistente usa URLs de Cloudinary.
 
 ## Reglas comerciales
