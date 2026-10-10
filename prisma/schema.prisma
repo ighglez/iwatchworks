@@ -1,0 +1,199 @@
+// Para producción: cambia provider a "postgresql" y DATABASE_URL a tu base de datos.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String    @id @default(cuid())
+  email                 String    @unique
+  passwordHash          String
+  name                  String
+  phone                 String?
+  role                  String    @default("CUSTOMER") // CUSTOMER | ADMIN
+  points                Int       @default(0)
+  welcomeDiscountUsed   Boolean   @default(false)
+  marketingOptIn        Boolean   @default(false)
+  // Dirección guardada para agilizar próximas compras
+  address               String?
+  city                  String?
+  postalCode            String?
+  province              String?
+  country               String?   @default("ES")
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  sessions              Session[]
+  orders                Order[]
+  pointsLog             PointsTransaction[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Product {
+  id                String   @id @default(cuid())
+  slug              String   @unique
+  name              String
+  brand             String
+  reference         String
+  category          String
+  description       String
+  price             Int // céntimos
+  compareAtPrice    Int?
+  stock             Int      @default(0)
+  lowStockThreshold Int      @default(2)
+  images            String   @default("[]") // JSON string[]
+  specs             String   @default("{}") // JSON Record<string,string>
+  featured          Boolean  @default(false)
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  orderItems        OrderItem[]
+  movements         StockMovement[]
+
+  @@index([active, featured])
+}
+
+model Order {
+  id                  String    @id @default(cuid())
+  number              String    @unique
+  accessToken         String    @unique
+  userId              String?
+  user                User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  email               String
+  name                String
+  phone               String
+  address             String
+  city                String
+  postalCode          String
+  province            String
+  country             String    @default("ES")
+  customerNotes       String?
+  subtotal            Int
+  welcomeDiscount     Int       @default(0)
+  pointsDiscount      Int       @default(0)
+  shipping            Int       @default(0)
+  total               Int
+  pointsRedeemed      Int       @default(0)
+  pointsEarned        Int       @default(0)
+  // PENDING | PAID | PREPARING | SHIPPED | DELIVERED | CANCELLED | REFUNDED
+  status              String    @default("PENDING")
+  paymentProvider     String    @default("stripe")
+  stripeSessionId     String?   @unique
+  stripePaymentIntent String?
+  carrier             String?
+  trackingNumber      String?
+  adminNotes          String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  paidAt              DateTime?
+  shippedAt           DateTime?
+  deliveredAt         DateTime?
+  cancelledAt         DateTime?
+  items               OrderItem[]
+  events              OrderEvent[]
+
+  @@index([status, createdAt])
+  @@index([email])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  name      String
+  reference String
+  image     String?
+  price     Int
+  quantity  Int
+}
+
+model OrderEvent {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type      String
+  message   String
+  createdAt DateTime @default(now())
+}
+
+model StockMovement {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  change    Int
+  stockAfter Int
+  reason    String // SALE_RESERVED | RELEASED | RESTOCK | ADJUSTMENT | RETURN
+  note      String?
+  orderId   String?
+  actor     String?
+  createdAt DateTime @default(now())
+
+  @@index([productId, createdAt])
+}
+
+model PointsTransaction {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  points    Int
+  reason    String
+  orderId   String?
+  createdAt DateTime @default(now())
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  name      String
+  city      String?
+  rating    Int
+  text      String
+  product   String?
+  orderId   String?  @unique
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
+model RateLimit {
+  key       String   @id
+  count     Int
+  resetAt   DateTime
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+}
