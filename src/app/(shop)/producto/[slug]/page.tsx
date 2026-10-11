@@ -111,12 +111,19 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       </section>
 
       {/* DESCRIPCIÓN */}
-      <section className="bg-stone">
-        <div className="container-x py-20 md:py-32">
-          <p className="eyebrow">{p.category}</p>
-          <p className="mt-6 max-w-4xl text-2xl font-normal leading-snug tracking-tight text-ink md:text-[40px] md:leading-[1.2]">{p.description}</p>
-        </div>
-      </section>
+      {p.description.trim() && (
+        <section className="bg-stone">
+          <div className="container-x grid gap-6 py-14 md:grid-cols-[1fr_2fr] md:gap-16 md:py-20">
+            <div>
+              <p className="eyebrow">{p.category}</p>
+              <h2 className="mt-3 text-2xl md:text-3xl">Sobre este reloj</h2>
+            </div>
+            <div className="max-w-2xl space-y-4 text-[15px] leading-relaxed text-ink-soft md:text-base md:leading-[1.8]">
+              {p.description.split(/\n\s*\n|\r?\n/).filter((t) => t.trim()).map((t, i) => <p key={i}>{t.trim()}</p>)}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* CARACTERÍSTICAS */}
       {specs.length > 0 && (
@@ -134,7 +141,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       )}
 
       {/* ASESORAMIENTO */}
-      <section className="container-x pb-20 md:pb-28">
+      <section className="container-x pb-20 pt-14 md:pb-28 md:pt-20">
         <div className="flex flex-col items-start justify-between gap-6 rounded-3xl bg-stone p-8 md:flex-row md:items-center md:p-12">
           <div>
             <h2 className="text-2xl md:text-3xl">¿Tienes dudas sobre este reloj?</h2>
