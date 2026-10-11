@@ -7,6 +7,7 @@ import { toPublic } from "@/lib/product";
 import { euros } from "@/lib/money";
 import { RULES, SITE } from "@/lib/config";
 import { getCurrentUser, welcomeEligible } from "@/lib/auth";
+import { getWhatsapp } from "@/lib/contact";
 import Gallery from "@/components/product/Gallery";
 import AddToCartButton from "@/components/product/AddToCartButton";
 import StockBadge from "@/components/product/StockBadge";
@@ -34,6 +35,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   if (!raw) notFound();
   const p = toPublic(raw);
   const user = await getCurrentUser();
+  const whatsapp = await getWhatsapp();
   const eligible = user ? await welcomeEligible(user.id) : true;
   const related = (await db.product.findMany({ where: { active: true, id: { not: p.id } }, orderBy: [{ featured: "desc" }], take: 6 }))
     .sort((a, b) => Number(b.category === p.category) - Number(a.category === p.category))
@@ -141,22 +143,24 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       )}
 
       {/* ASESORAMIENTO */}
-      <section className="container-x pb-20 pt-14 md:pb-28 md:pt-20">
-        <div className="flex flex-col items-start justify-between gap-6 rounded-3xl bg-stone p-8 md:flex-row md:items-center md:p-12">
-          <div>
-            <h2 className="text-2xl md:text-3xl">¿Tienes dudas sobre este reloj?</h2>
-            <p className="mt-2 text-ink-soft">Te ayudamos con medidas, ajuste del brazalete o cualquier detalle antes de comprar.</p>
+      {whatsapp.configured && (
+        <section className="container-x pb-20 pt-14 md:pb-28 md:pt-20">
+          <div className="flex flex-col items-start justify-between gap-6 rounded-3xl bg-stone p-8 md:flex-row md:items-center md:p-12">
+            <div>
+              <h2 className="text-2xl md:text-3xl">¿Tienes dudas sobre este reloj?</h2>
+              <p className="mt-2 text-ink-soft">Te ayudamos con medidas, ajuste del brazalete o cualquier detalle antes de comprar.</p>
+            </div>
+            <a
+              href={`https://wa.me/${whatsapp.number}?text=${encodeURIComponent(`Hola, tengo una pregunta sobre el ${p.brand} ${p.name} (${p.reference})`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-outline shrink-0"
+            >
+              <WhatsappIcon className="h-5 w-5 text-[#1f9e55]" /> Preguntar por WhatsApp
+            </a>
           </div>
-          <a
-            href={`https://wa.me/${SITE.whatsapp}?text=${encodeURIComponent(`Hola, tengo una pregunta sobre el ${p.brand} ${p.name} (${p.reference})`)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-outline shrink-0"
-          >
-            <WhatsappIcon className="h-5 w-5 text-[#1f9e55]" /> Preguntar por WhatsApp
-          </a>
-        </div>
-      </section>
+        </section>
+      )}
 
       {related.length > 0 && (
         <section className="container-x pb-24 md:pb-32">

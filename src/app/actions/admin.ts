@@ -13,6 +13,7 @@ import { audit } from "@/lib/audit";
 import { rateLimit } from "@/lib/rate-limit";
 import { sendMail, escapeHtml } from "@/lib/email";
 import { SITE } from "@/lib/config";
+import { formatPhone, normalizePhone } from "@/lib/contact";
 import { cancelOrder, markOrderPaid, notifyShipped } from "@/lib/orders";
 import { centsFromEuroInput } from "@/lib/money";
 import { slugify } from "@/lib/product";
@@ -284,6 +285,20 @@ export async function saveBankDetails(_: AdminState, form: FormData): Promise<Ad
   }
   revalidatePath("/admin");
   return { ok: true, message: "Datos bancarios guardados. Ya aparecen en los nuevos pedidos." };
+}
+
+export async function saveWhatsapp(_: AdminState, form: FormData): Promise<AdminState> {
+  const admin = await requireAdmin();
+  const number = normalizePhone(String(form.get("whatsapp") || ""));
+  if (!number) return { error: "Escribe un móvil válido, por ejemplo +34 612 345 678." };
+  await db.siteMeta.upsert({
+    where: { key: "whatsapp" },
+    create: { key: "whatsapp", value: JSON.stringify({ number }) },
+    update: { value: JSON.stringify({ number }) },
+  });
+  await audit(admin.email, "Número de WhatsApp cambiado", formatPhone(number));
+  revalidatePath("/", "layout");
+  return { ok: true, message: `Guardado. Los botones de WhatsApp ya abren ${formatPhone(number)}.` };
 }
 
 /* ---------- Verificación en dos pasos ---------- */

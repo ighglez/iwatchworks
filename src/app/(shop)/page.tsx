@@ -6,6 +6,7 @@ import { euros } from "@/lib/money";
 import ProductCard from "@/components/product/ProductCard";
 import WatchImage from "@/components/WatchImage";
 import ContactForm from "@/components/forms/ContactForm";
+import { getWhatsapp } from "@/lib/contact";
 import { ArrowIcon, ChatIcon, ReturnIcon, ShieldIcon, StarIcon, TruckIcon, WhatsappIcon } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
@@ -54,6 +55,7 @@ const STORIES: Record<string, { eyebrow: string; title: string; text: string }> 
 };
 
 export default async function Home() {
+  const whatsapp = await getWhatsapp();
   const [all, reviews] = await Promise.all([
     db.product.findMany({ where: { active: true }, orderBy: [{ featured: "desc" }, { createdAt: "desc" }] }),
     db.review.findMany({ where: { approved: true }, orderBy: { createdAt: "desc" }, take: 3 }),
@@ -203,14 +205,16 @@ export default async function Home() {
           <p className="eyebrow">Contacto</p>
           <h2 className="mt-4 text-4xl md:text-5xl">Hablemos</h2>
           <p className="mt-5 text-ink-soft">¿Buscas una referencia concreta o quieres consejo? Te responde una persona, normalmente en el mismo día.</p>
-          <a
-            href={`https://wa.me/${SITE.whatsapp}?text=${encodeURIComponent("Hola, me gustaría información sobre un reloj")}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn mt-7 bg-[#1f9e55] text-white hover:bg-[#188a49]"
-          >
-            <WhatsappIcon /> Escríbenos por WhatsApp
-          </a>
+          {whatsapp.configured && (
+            <a
+              href={`https://wa.me/${whatsapp.number}?text=${encodeURIComponent("Hola, me gustaría información sobre un reloj")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn mt-7 bg-[#1f9e55] text-white hover:bg-[#188a49]"
+            >
+              <WhatsappIcon /> Escríbenos por WhatsApp
+            </a>
+          )}
           <p className="mt-4 text-sm text-ink-muted">{SITE.hours.join(" · ")}</p>
           <div className="card mt-10 p-6 md:p-8">
             <ContactForm />
