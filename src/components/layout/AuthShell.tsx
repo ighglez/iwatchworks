@@ -19,7 +19,7 @@ export default function AuthShell({ title, eyebrow, children }: { title: string;
             "Pago más rápido con tus datos guardados",
             "Historial de pedidos, facturas y seguimiento",
           ].map((t) => (
-            <li key={t} className="flex gap-3"><CheckIcon className="h-5 w-5 shrink-0 text-gold" /> {t}</li>
+            <li key={t} className="flex gap-3"><CheckIcon className="h-5 w-5 shrink-0 text-champagne" /> {t}</li>
           ))}
         </ul>
         <p className="mt-8 text-xs text-ivory/50">La cuenta es opcional: también puedes comprar como invitado.</p>

@@ -41,9 +41,9 @@ export default async function Cuenta({ searchParams }: { searchParams: Promise<{
       <div className="mt-10 grid gap-6 md:grid-cols-3">
         <div className="rounded-3xl bg-night p-8 text-ivory md:col-span-1">
           <p className="eyebrow-light">Tus puntos</p>
-          <p className="mt-3 font-display text-6xl text-gold">{user.points}</p>
+          <p className="mt-3 font-display text-6xl text-champagne">{user.points}</p>
           <p className="mt-1 text-sm text-ivory/70">Equivalen a {euros(pointsValue(user.points))} de descuento</p>
-          <div className="mt-5 h-1 overflow-hidden rounded-full bg-white/10"><div className="h-1 rounded-full bg-gold" style={{ width: `${((RULES.pointsBlock - toNext) / RULES.pointsBlock) * 100}%` }} /></div>
+          <div className="mt-5 h-1 overflow-hidden rounded-full bg-white/10"><div className="h-1 rounded-full bg-champagne" style={{ width: `${((RULES.pointsBlock - toNext) / RULES.pointsBlock) * 100}%` }} /></div>
           <p className="mt-2 text-xs text-ivory/50">Te faltan {toNext} puntos para los próximos 5 €</p>
           {eligible && <p className="mt-5 border-t border-white/10 pt-4 text-sm text-gold-light">+ 5% de bienvenida pendiente de usar</p>}
         </div>

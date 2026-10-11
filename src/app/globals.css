@@ -7,9 +7,9 @@
 @layer base {
   html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
   body { @apply bg-ivory text-ink font-sans antialiased; font-feature-settings: "ss01", "cv11"; }
-  h1, h2, h3 { @apply font-display font-semibold tracking-[-0.02em]; }
-  ::selection { background: #E3D3AC; }
-  :focus-visible { outline: 2px solid #C6A664; outline-offset: 3px; }
+  h1, h2, h3 { @apply font-display font-medium tracking-[-0.025em]; }
+  ::selection { background: #DDBFC3; }
+  :focus-visible { outline: 2px solid #7A1F2E; outline-offset: 3px; }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
   }
@@ -18,15 +18,15 @@
 @layer components {
   .container-x { @apply mx-auto w-full max-w-[1320px] px-5 sm:px-8 lg:px-12; }
   .eyebrow { @apply text-[11px] font-medium uppercase tracking-luxe text-gold-dark; }
-  .eyebrow-light { @apply text-[11px] font-medium uppercase tracking-luxe text-gold; }
+  .eyebrow-light { @apply text-[11px] font-medium uppercase tracking-luxe text-champagne-light; }
   .lead { @apply text-lg leading-relaxed text-ink-soft md:text-xl; }
   .btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-medium transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50; }
-  .btn-primary { @apply btn bg-ink text-ivory hover:bg-black; }
-  .btn-gold { @apply btn bg-gold text-ink hover:bg-[#D4B677]; }
-  .btn-outline { @apply btn border border-ink/25 text-ink hover:border-ink hover:bg-ink hover:text-ivory; }
-  .btn-outline-light { @apply btn border border-white/30 text-white hover:border-white hover:bg-white hover:text-ink; }
+  .btn-primary { @apply btn bg-gold text-white hover:bg-gold-dark; }
+  .btn-gold { @apply btn bg-ivory text-gold hover:bg-white; }
+  .btn-outline { @apply btn border border-ink/20 text-ink hover:border-gold hover:text-gold; }
+  .btn-outline-light { @apply btn border border-white/40 text-white hover:border-white hover:bg-white hover:text-gold; }
   .btn-ghost { @apply btn px-3 text-ink-soft hover:text-ink; }
-  .link-arrow { @apply inline-flex items-center gap-2 text-sm font-medium text-ink underline-offset-8 hover:underline; }
+  .link-arrow { @apply inline-flex items-center gap-2 text-sm font-medium text-gold underline-offset-8 hover:underline; }
   .input { @apply w-full rounded-xl border border-line bg-white px-4 py-3.5 text-[15px] text-ink placeholder:text-ink-muted transition focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/30; }
   .label { @apply mb-2 block text-xs font-medium text-ink-soft; }
   .card { @apply rounded-2xl border border-line bg-white; }

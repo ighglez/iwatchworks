@@ -111,10 +111,10 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       </section>
 
       {/* DESCRIPCIÓN */}
-      <section className="bg-night text-ivory">
+      <section className="bg-stone">
         <div className="container-x py-20 md:py-32">
-          <p className="eyebrow-light">{p.category}</p>
-          <p className="mt-6 max-w-4xl text-2xl font-medium leading-snug tracking-tight md:text-[40px] md:leading-[1.2]">{p.description}</p>
+          <p className="eyebrow">{p.category}</p>
+          <p className="mt-6 max-w-4xl text-2xl font-normal leading-snug tracking-tight text-ink md:text-[40px] md:leading-[1.2]">{p.description}</p>
         </div>
       </section>
 
@@ -124,7 +124,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           <h2 className="text-3xl md:text-5xl">Características</h2>
           <dl className="mt-12 grid gap-px overflow-hidden rounded-3xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
             {specs.map(([k, v]) => (
-              <div key={k} className="bg-ivory p-7">
+              <div key={k} className="bg-white p-7">
                 <dt className="text-[11px] font-medium uppercase tracking-luxe text-gold-dark">{k}</dt>
                 <dd className="mt-3 text-lg font-medium leading-snug">{v}</dd>
               </div>

@@ -6,10 +6,13 @@ export default {
     extend: {
       colors: {
         // Paleta IWatchWorks
-        gold: { DEFAULT: "#C6A664", dark: "#8A6D33", light: "#E3D3AC", soft: "#F3ECDD" },
+        // "gold" es el color de acento de la marca: burdeos.
+        gold: { DEFAULT: "#7A1F2E", dark: "#641826", light: "#DDBFC3", soft: "#F5ECEA" },
+        champagne: { DEFAULT: "#C6A664", light: "#E3D3AC" },
         ivory: { DEFAULT: "#F9F9F7", dark: "#EFEDE6" },
-        stone: "#F2F0EA",
-        night: { DEFAULT: "#0B0B0A", soft: "#161614", line: "#2A2925" },
+        stone: "#F3F0EA",
+        // Bandas de color intenso (club, menú móvil, popups): burdeos profundo.
+        night: { DEFAULT: "#4E1420", soft: "#5E1A28", line: "#6E2A37" },
         ink: { DEFAULT: "#141413", soft: "#4D4B46", muted: "#7C7972" },
         line: "#E2DFD6",
       },

@@ -291,7 +291,7 @@ function Steps() {
       {steps.map((s, i) => (
         <li key={s} className="flex items-center gap-2 sm:gap-4">
           <span className={`flex items-center gap-2 ${i === 1 ? "text-ink" : i < 1 ? "text-gold-dark" : "text-ink-muted"}`}>
-            <span className={`flex h-6 w-6 items-center justify-center rounded-full border text-[10px] ${i === 1 ? "border-ink bg-ink text-ivory" : i < 1 ? "border-gold bg-gold text-white" : "border-line"}`}>
+            <span className={`flex h-6 w-6 items-center justify-center rounded-full border text-[10px] ${i === 1 ? "border-gold bg-gold text-white" : i < 1 ? "border-gold bg-gold-soft text-gold" : "border-line"}`}>
               {i < 1 ? <CheckIcon className="h-3.5 w-3.5" /> : i + 1}
             </span>
             <span className="hidden sm:inline">{s}</span>

@@ -39,17 +39,17 @@ export default function WelcomePopup() {
 
   return (
     <div role="dialog" aria-label="Club IWatchWorks" className="fixed inset-x-3 bottom-3 z-40 animate-rise sm:inset-x-auto sm:bottom-6 sm:left-6 sm:max-w-[360px]">
-      <div className="relative overflow-hidden rounded-3xl bg-night p-7 text-ivory shadow-soft">
-        <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gold/25 blur-3xl" aria-hidden="true" />
-        <button onClick={dismiss} className="absolute right-4 top-4 rounded-full p-1.5 text-ivory/60 hover:bg-white/10 hover:text-ivory" aria-label="Cerrar">
+      <div className="relative overflow-hidden rounded-3xl border border-line bg-white p-7 text-ink shadow-soft">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gold-soft blur-3xl" aria-hidden="true" />
+        <button onClick={dismiss} className="absolute right-4 top-4 rounded-full p-1.5 text-ink-muted hover:bg-stone hover:text-ink" aria-label="Cerrar">
           <CloseIcon className="h-4 w-4" />
         </button>
-        <p className="eyebrow-light">Club IWatchWorks</p>
-        <p className="mt-4 text-2xl font-semibold leading-tight tracking-tight">Tu primer reloj, con un {RULES.welcomeDiscountPercent}% menos.</p>
-        <p className="mt-3 text-sm leading-relaxed text-ivory/65">Cuenta gratuita, puntos en cada compra y pago más rápido. Si prefieres comprar como invitado, también puedes.</p>
+        <p className="eyebrow">Club IWatchWorks</p>
+        <p className="mt-4 text-2xl font-medium leading-tight tracking-tight">Tu primer reloj, con un {RULES.welcomeDiscountPercent}% menos.</p>
+        <p className="mt-3 text-sm leading-relaxed text-ink-soft">Cuenta gratuita, puntos en cada compra y pago más rápido. Si prefieres comprar como invitado, también puedes.</p>
         <div className="mt-6 flex items-center gap-4">
-          <Link href={`/registrarse?next=${encodeURIComponent(pathname)}`} onClick={dismiss} className="btn-gold px-6 py-3">Crear mi cuenta</Link>
-          <button onClick={dismiss} className="text-sm text-ivory/60 hover:text-ivory">Ahora no</button>
+          <Link href={`/registrarse?next=${encodeURIComponent(pathname)}`} onClick={dismiss} className="btn-primary px-6 py-3">Crear mi cuenta</Link>
+          <button onClick={dismiss} className="text-sm text-ink-muted hover:text-ink">Ahora no</button>
         </div>
       </div>
     </div>

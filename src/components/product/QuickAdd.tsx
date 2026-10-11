@@ -11,7 +11,7 @@ export default function QuickAdd({ product }: { product: PublicProduct }) {
       onClick={() =>
         add({ productId: product.id, slug: product.slug, name: product.name, brand: product.brand, reference: product.reference, image: product.images[0] ?? null, art: product.artwork, price: product.price, stock: product.stock })
       }
-      className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-ink/15 transition hover:border-ink hover:bg-ink hover:text-ivory"
+      className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-ink/15 transition hover:border-gold hover:bg-gold hover:text-white"
       aria-label={`Añadir ${product.name} ${product.reference} al carrito`}
       title="Añadir al carrito"
     >

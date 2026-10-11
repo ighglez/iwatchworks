@@ -51,7 +51,7 @@ export default async function Tienda({ searchParams }: { searchParams: SP }) {
   };
 
   const chip = (active: boolean) =>
-    `whitespace-nowrap rounded-full px-5 py-2.5 text-sm transition ${active ? "bg-ink text-ivory" : "bg-stone text-ink-soft hover:bg-ivory-dark hover:text-ink"}`;
+    `whitespace-nowrap rounded-full px-5 py-2.5 text-sm transition ${active ? "bg-gold text-white" : "bg-stone text-ink-soft hover:bg-ivory-dark hover:text-ink"}`;
 
   const title = categoria === "Cronógrafo" ? "Cronógrafos" : categoria ?? "La colección";
 

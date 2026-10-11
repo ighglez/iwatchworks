@@ -59,7 +59,7 @@ export function RegisterForm({ next }: { next?: string }) {
         <span>Quiero recibir novedades y ediciones limitadas (opcional).</span>
       </label>
       <Msg state={state} />
-      <button disabled={pending} className="btn-gold w-full">{pending ? "Creando cuenta…" : "Crear cuenta y obtener mi 5%"}</button>
+      <button disabled={pending} className="btn-primary w-full">{pending ? "Creando cuenta…" : "Crear cuenta y obtener mi 5%"}</button>
     </Form>
   );
 }

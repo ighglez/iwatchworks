@@ -35,7 +35,7 @@ export default function MobileBuyBar({ product }: { product: PublicProduct }) {
           <BagIcon className="h-5 w-5" />
         </button>
         <button tabIndex={show ? 0 : -1} onClick={() => router.push(`/checkout?comprar=${product.id}`)} className="btn-primary px-5 py-3">
-          <BoltIcon className="h-4 w-4 text-gold" /> Comprar ya
+          <BoltIcon className="h-4 w-4 text-champagne-light" /> Comprar ya
         </button>
       </div>
     </div>

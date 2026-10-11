@@ -68,32 +68,26 @@ export default async function Home() {
   return (
     <>
       {/* HERO */}
-      <section className="relative overflow-hidden bg-night text-ivory">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_60%_at_70%_45%,rgba(198,166,100,0.22),transparent_70%)]" aria-hidden="true" />
-        <div className="container-x relative grid min-h-[100svh] items-center gap-6 pb-14 pt-28 md:grid-cols-[1fr_1.05fr] md:pb-0 md:pt-20">
-          <div className="order-2 md:order-1">
-            <p className="eyebrow-light animate-rise">Relojería japonesa seleccionada</p>
-            <h1 className="mt-6 animate-rise text-[44px] leading-[1.02] [animation-delay:80ms] sm:text-6xl lg:text-[84px]">
-              El tiempo,<br />en su mejor<br /><span className="text-gold">versión.</span>
-            </h1>
-            <p className="mt-7 max-w-md animate-rise text-lg leading-relaxed text-ivory/70 [animation-delay:160ms]">
-              Piezas automáticas elegidas una a una, entregadas aseguradas y con el trato de una relojería de barrio.
-            </p>
-            <div className="mt-10 flex animate-rise flex-wrap gap-3 [animation-delay:240ms]">
-              <Link href="/tienda" className="btn-gold px-8">Descubrir la colección</Link>
-              {hero && <Link href={`/producto/${hero.slug}`} className="btn-outline-light px-8">Ver el {hero.name}</Link>}
-            </div>
+      <section className="relative overflow-hidden bg-gradient-to-b from-ivory via-ivory to-stone">
+        <div className="container-x relative flex flex-col items-center pt-14 text-center md:pt-20">
+          <p className="eyebrow animate-rise">Relojería japonesa seleccionada</p>
+          <h1 className="mt-6 max-w-4xl animate-rise text-[42px] leading-[1.04] [animation-delay:80ms] sm:text-6xl lg:text-[80px]">
+            El tiempo, en su mejor versión.
+          </h1>
+          <p className="mt-6 max-w-xl animate-rise text-lg leading-relaxed text-ink-soft [animation-delay:160ms]">
+            Piezas automáticas elegidas una a una, entregadas aseguradas y con el trato cercano de una relojería de confianza.
+          </p>
+          <div className="mt-9 flex animate-rise flex-wrap justify-center gap-3 [animation-delay:240ms]">
+            <Link href="/tienda" className="btn-primary px-8">Descubrir la colección</Link>
+            {hero && <Link href={`/producto/${hero.slug}`} className="btn-outline px-8">Ver el {hero.name}</Link>}
           </div>
           {hero && (
-            <Link href={`/producto/${hero.slug}`} className="order-1 mx-auto block w-[72%] max-w-[520px] md:order-2 md:w-full" aria-label={`${hero.brand} ${hero.name}`}>
-              <WatchImage src={hero.images[0]} art={hero.artwork} alt={`${hero.brand} ${hero.name} ${hero.reference}`} eager fit="contain" sizes="(min-width: 768px) 50vw, 80vw" className="aspect-[4/5] w-full animate-float" />
+            <Link href={`/producto/${hero.slug}`} className="relative mt-10 block w-[78%] max-w-[460px] md:mt-12" aria-label={`${hero.brand} ${hero.name}`}>
+              <span className="pointer-events-none absolute inset-x-[8%] bottom-[6%] top-[14%] rounded-full bg-[radial-gradient(closest-side,rgba(122,31,46,0.10),transparent)]" aria-hidden="true" />
+              <WatchImage src={hero.images[0]} art={hero.artwork} alt={`${hero.brand} ${hero.name} ${hero.reference}`} eager fit="contain" sizes="(min-width: 768px) 460px, 80vw" className="relative aspect-[4/5] w-full animate-float" />
             </Link>
           )}
         </div>
-        <a href="#coleccion" className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 text-[11px] uppercase tracking-luxe text-ivory/50 hover:text-ivory md:flex">
-          Descubrir
-          <span className="h-10 w-px bg-gradient-to-b from-ivory/50 to-transparent" />
-        </a>
       </section>
 
       {/* COLECCIÓN */}
@@ -113,20 +107,20 @@ export default async function Home() {
       {/* HISTORIAS */}
       {stories.map((p, i) => {
         const s = STORIES[p.category];
-        const dark = i % 2 === 0;
+        const alt = i % 2 === 1;
         return (
-          <section key={p.id} className={dark ? "bg-night text-ivory" : "bg-stone"}>
-            <div className={`container-x grid items-center gap-10 py-20 md:grid-cols-2 md:gap-20 md:py-32 ${dark ? "" : "md:[&>*:first-child]:order-2"}`}>
-              <Link href={`/producto/${p.slug}`} className={`block overflow-hidden rounded-[2rem] ${dark ? "bg-night-soft" : "bg-ivory"}`}>
+          <section key={p.id} className={alt ? "bg-stone" : "bg-ivory"}>
+            <div className={`container-x grid items-center gap-10 py-20 md:grid-cols-2 md:gap-20 md:py-32 ${alt ? "md:[&>*:first-child]:order-2" : ""}`}>
+              <Link href={`/producto/${p.slug}`} className={`block overflow-hidden rounded-[2rem] ${alt ? "bg-ivory" : "bg-stone"}`}>
                 <WatchImage src={p.images[0]} art={p.artwork} alt={`${p.brand} ${p.name}`} fit="contain" sizes="(min-width: 768px) 50vw, 100vw" className="aspect-square w-full transition duration-700 hover:scale-[1.03]" />
               </Link>
               <div>
-                <p className={dark ? "eyebrow-light" : "eyebrow"}>{s.eyebrow}</p>
+                <p className="eyebrow">{s.eyebrow}</p>
                 <h2 className="mt-5 text-4xl leading-[1.05] md:text-6xl">{s.title}</h2>
-                <p className={`mt-6 max-w-md text-lg leading-relaxed ${dark ? "text-ivory/70" : "text-ink-soft"}`}>{s.text}</p>
+                <p className="mt-6 max-w-md text-lg leading-relaxed text-ink-soft">{s.text}</p>
                 <div className="mt-10 flex flex-wrap items-center gap-6">
-                  <Link href={`/producto/${p.slug}`} className={dark ? "btn-gold" : "btn-primary"}>Descubrir el {p.name}</Link>
-                  <span className={`text-sm tabular-nums ${dark ? "text-ivory/60" : "text-ink-muted"}`}>{euros(p.price)}</span>
+                  <Link href={`/producto/${p.slug}`} className="btn-primary">Descubrir el {p.name}</Link>
+                  <span className="text-sm tabular-nums text-ink-muted">{euros(p.price)}</span>
                 </div>
               </div>
             </div>
@@ -153,8 +147,8 @@ export default async function Home() {
 
       {/* CLUB */}
       <section className="container-x pb-20 md:pb-32">
-        <div className="relative overflow-hidden rounded-[2rem] bg-night px-7 py-14 text-ivory md:px-16 md:py-20">
-          <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-gold/20 blur-3xl" aria-hidden="true" />
+        <div className="relative overflow-hidden rounded-[2rem] bg-gold px-7 py-14 text-ivory md:px-16 md:py-20">
+          <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-champagne/20 blur-3xl" aria-hidden="true" />
           <div className="relative grid items-center gap-10 md:grid-cols-[1.3fr_1fr]">
             <div>
               <p className="eyebrow-light">Club IWatchWorks</p>

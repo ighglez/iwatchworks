@@ -16,7 +16,7 @@ const NAV = [
 export function Wordmark({ className = "" }: { className?: string }) {
   return (
     <span className={`inline-flex flex-col items-center leading-none ${className}`}>
-      <svg viewBox="0 0 24 12" className="mb-1 h-2.5 w-5 text-gold" fill="currentColor" aria-hidden="true">
+      <svg viewBox="0 0 24 12" className="mb-1 h-2.5 w-5 text-champagne" fill="currentColor" aria-hidden="true">
         <path d="M2 11 0 2l6 4 6-6 6 6 6-4-2 9H2Z" />
       </svg>
       <span className="text-[15px] font-semibold tracking-[0.32em] sm:text-[17px]">IWATCHWORKS</span>
@@ -29,7 +29,6 @@ export default function Header({ isAdmin }: { isAdmin: boolean }) {
   const [menu, setMenu] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
-  const overlay = pathname === "/" && !scrolled && !menu;
 
   useEffect(() => setMenu(false), [pathname]);
   useEffect(() => {
@@ -42,8 +41,8 @@ export default function Header({ isAdmin }: { isAdmin: boolean }) {
   return (
     <>
       <header
-        className={`${pathname === "/" ? "fixed" : "sticky"} inset-x-0 top-0 z-40 transition-colors duration-500 ${
-          overlay ? "bg-transparent text-white" : "border-b border-line/70 bg-ivory/90 text-ink backdrop-blur-xl"
+        className={`sticky inset-x-0 top-0 z-40 bg-ivory/95 text-ink backdrop-blur-xl transition-shadow duration-500 ${
+          scrolled ? "shadow-[0_1px_0_#E2DFD6]" : ""
         }`}
       >
         <div className="container-x grid h-16 grid-cols-[1fr_auto_1fr] items-center md:h-[76px]">
@@ -61,13 +60,13 @@ export default function Header({ isAdmin }: { isAdmin: boolean }) {
             </nav>
           </div>
 
-          <Link href="/" aria-label="IWatchWorks, inicio">
+          <Link href="/" aria-label="IWatchWorks, inicio" className="text-gold">
             <Wordmark />
           </Link>
 
           <div className="flex items-center justify-end gap-1 sm:gap-2">
             {isAdmin && (
-              <Link href="/admin" className={`hidden rounded-full border px-3 py-1.5 text-[11px] font-medium sm:inline-flex ${overlay ? "border-white/40" : "border-gold text-gold-dark"}`}>
+              <Link href="/admin" className={`hidden rounded-full border px-3 py-1.5 text-[11px] font-medium sm:inline-flex border-gold text-gold`}>
                 Admin
               </Link>
             )}
@@ -86,12 +85,12 @@ export default function Header({ isAdmin }: { isAdmin: boolean }) {
       </header>
 
       {menu && (
-        <div className="fixed inset-0 z-50 animate-fade-in bg-night text-ivory lg:hidden" role="dialog" aria-modal="true" aria-label="Menú">
+        <div className="fixed inset-0 z-50 animate-fade-in bg-ivory text-ink lg:hidden" role="dialog" aria-modal="true" aria-label="Menú">
           <div className="container-x flex h-16 items-center justify-between">
             <button onClick={() => setMenu(false)} className="-ml-2 flex items-center gap-2 p-2" aria-label="Cerrar menú">
               <CloseIcon /> <span className="text-sm">Cerrar</span>
             </button>
-            <Wordmark />
+            <Wordmark className="text-gold" />
             <span className="w-16" />
           </div>
           <nav className="container-x mt-10">
@@ -102,7 +101,7 @@ export default function Header({ isAdmin }: { isAdmin: boolean }) {
                 </li>
               ))}
             </ul>
-            <div className="mt-12 flex flex-col gap-4 border-t border-night-line pt-8 text-sm text-ivory/70">
+            <div className="mt-12 flex flex-col gap-4 border-t border-line pt-8 text-sm text-ink-soft">
               <Link href={viewer.loggedIn ? "/cuenta" : "/iniciar-sesion"}>{viewer.loggedIn ? "Mi cuenta" : "Acceder o crear cuenta"}</Link>
               <Link href="/seguimiento">Seguir mi pedido</Link>
               {isAdmin && <Link href="/admin" className="text-gold">Panel de administración</Link>}

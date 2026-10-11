@@ -16,7 +16,7 @@ export default function ClaimAccount({ order, token, points }: { order: string; 
       <input type="hidden" name="t" value={token} />
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <input name="password" type="password" autoComplete="new-password" minLength={8} required placeholder="Contraseña (mín. 8 caracteres)" className="input" aria-label="Contraseña" />
-        <button disabled={pending} className="btn-gold shrink-0">{pending ? "Creando…" : "Crear cuenta"}</button>
+        <button disabled={pending} className="btn-primary shrink-0">{pending ? "Creando…" : "Crear cuenta"}</button>
       </div>
       {state?.error && <p className="mt-2 text-sm text-rose-700">{state.error}</p>}
     </form>

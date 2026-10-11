@@ -20,9 +20,9 @@ export default function AdminNav({ badges }: { badges: Record<string, number> })
       {ITEMS.map(([href, label]) => {
         const active = href === "/admin" ? path === href : path.startsWith(href);
         return (
-          <Link key={href} href={href} className={`flex shrink-0 items-center justify-between gap-3 px-3 py-2.5 text-sm transition ${active ? "bg-white/10 text-gold" : "text-ivory/70 hover:bg-white/5 hover:text-ivory"}`}>
+          <Link key={href} href={href} className={`flex shrink-0 items-center justify-between gap-3 px-3 py-2.5 text-sm transition ${active ? "bg-white/10 text-champagne-light" : "text-ivory/70 hover:bg-white/5 hover:text-ivory"}`}>
             {label}
-            {badges[href] > 0 && <span className="rounded-full bg-gold px-2 text-[11px] font-semibold text-ink">{badges[href]}</span>}
+            {badges[href] > 0 && <span className="rounded-full bg-champagne px-2 text-[11px] font-semibold text-ink">{badges[href]}</span>}
           </Link>
         );
       })}
