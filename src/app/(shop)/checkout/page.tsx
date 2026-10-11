@@ -3,6 +3,8 @@ import { getCurrentUser, welcomeEligible } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { toPublic } from "@/lib/product";
 import CheckoutForm from "./CheckoutForm";
+import { paymentMethod } from "@/lib/payments";
+import { RULES } from "@/lib/config";
 
 export const metadata: Metadata = { title: "Finalizar compra", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -16,6 +18,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
     <div className="container-x py-10 md:py-14">
       <CheckoutForm
         cancelled={sp.cancelado === "1"}
+        transferDays={paymentMethod() === "transfer" ? RULES.transferDays : 0}
         buyNow={buyNow ? toPublic(buyNow) : null}
         user={
           user

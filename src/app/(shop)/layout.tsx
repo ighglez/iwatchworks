@@ -5,7 +5,7 @@ import Footer from "@/components/layout/Footer";
 import WelcomePopup from "@/components/layout/WelcomePopup";
 import CookieNotice from "@/components/layout/CookieNotice";
 import { getCurrentUser, welcomeEligible } from "@/lib/auth";
-import { demoPaymentsEnabled } from "@/lib/stripe";
+import { paymentMethod } from "@/lib/payments";
 
 export default async function ShopLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
@@ -22,7 +22,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
       <CartDrawer />
       <WelcomePopup />
       <CookieNotice />
-      {demoPaymentsEnabled() && (
+      {paymentMethod() === "demo" && (
         <p className="pointer-events-none fixed bottom-3 right-3 z-20 rounded-full bg-amber-100/95 px-3 py-1.5 text-[11px] font-medium text-amber-900 shadow-sm">
           Modo prueba · pagos simulados
         </p>

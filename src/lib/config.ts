@@ -26,7 +26,8 @@ export const RULES = {
   pointsBlockValueCents: 500, // 100 puntos = 5 €
   maxPointsDiscountRatio: 0.3, // como máximo el 30% del pedido con puntos
   shippingCents: 0, // envío asegurado gratuito
-  reservationMinutes: 30, // tiempo que se reserva el stock mientras se paga
+  reservationMinutes: 30, // tiempo que se reserva el stock mientras se paga con tarjeta
+  transferDays: 3, // días para hacer la transferencia antes de liberar el reloj
   maxQtyPerItem: 5,
 };
 

@@ -33,7 +33,7 @@ export async function updateOrderStatus(form: FormData) {
   if (status === "PAID") {
     // Pago confirmado manualmente (p. ej. transferencia)
     await markOrderPaid(id, null);
-    await db.orderEvent.create({ data: { orderId: id, type: "NOTE", message: `Pago marcado manualmente por ${admin.email}` } });
+    await db.orderEvent.create({ data: { orderId: id, type: "NOTE", message: order.paymentProvider === "transfer" ? `Transferencia recibida, confirmada por ${admin.email}` : `Pago marcado manualmente por ${admin.email}` } });
   } else if (status === "SHIPPED") {
     const carrier = z.string().trim().min(2).max(60).safeParse(form.get("carrier"));
     const tracking = z.string().trim().min(3).max(80).safeParse(form.get("tracking"));
@@ -218,4 +218,31 @@ export async function moderateReview(form: FormData) {
   else await db.review.update({ where: { id }, data: { approved: op === "approve" } });
   revalidatePath("/admin/resenas");
   revalidatePath("/");
+}
+
+/* ---------- Ajustes ---------- */
+
+/** Valida un IBAN con el dígito de control (ISO 13616). */
+function validIban(raw: string) {
+  const iban = raw.replace(/\s+/g, "").toUpperCase();
+  if (!/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(iban)) return null;
+  const rearranged = (iban.slice(4) + iban.slice(0, 4)).replace(/[A-Z]/g, (c) => String(c.charCodeAt(0) - 55));
+  let rem = 0;
+  for (const d of rearranged) rem = (rem * 10 + Number(d)) % 97;
+  return rem === 1 ? iban : null;
+}
+
+export async function saveBankDetails(_: AdminState, form: FormData): Promise<AdminState> {
+  const admin = await requireAdmin();
+  const holder = String(form.get("holder") || "").trim().slice(0, 120);
+  const iban = validIban(String(form.get("iban") || ""));
+  const bic = String(form.get("bic") || "").trim().toUpperCase().slice(0, 11);
+  const bank = String(form.get("bank") || "").trim().slice(0, 80);
+  if (holder.length < 3) return { error: "Indica el titular de la cuenta." };
+  if (!iban) return { error: "El IBAN no es válido. Revisa que esté completo y sin errores." };
+  if (bic && !/^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(bic)) return { error: "El BIC/SWIFT no es válido." };
+  const value = JSON.stringify({ holder, iban, bic, bank, updatedBy: admin.email });
+  await db.siteMeta.upsert({ where: { key: "bank" }, create: { key: "bank", value }, update: { value } });
+  revalidatePath("/admin");
+  return { ok: true, message: "Datos bancarios guardados. Ya aparecen en los nuevos pedidos." };
 }

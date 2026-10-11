@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { euros } from "@/lib/money";
+import { RULES } from "@/lib/config";
 import { stripeEnabled } from "@/lib/stripe";
 import { adminCancelOrder, saveAdminNotes, updateOrderStatus } from "@/app/actions/admin";
 import { StatusPill, fmtDate } from "../../ui";
@@ -39,11 +40,15 @@ export default async function PedidoAdmin({ params }: { params: Promise<{ id: st
               <h2 className="text-2xl">Siguiente paso</h2>
               {order.status === "PENDING" && (
                 <div className="mt-3 text-sm text-ink-soft">
-                  <p>El cliente no ha completado el pago. El stock queda reservado unos minutos y se libera solo si no paga.</p>
+                  {order.paymentProvider === "transfer" ? (
+                    <p>Esperando la transferencia de <b className="text-ink">{euros(order.total)}</b> con el concepto <b className="text-ink">{order.number}</b>. Cuando la veas en el banco, márcala como recibida: el cliente recibirá la confirmación y sus puntos. Si no llega en {RULES.transferDays} días, el pedido se cancela solo y el reloj vuelve a estar disponible.</p>
+                  ) : (
+                    <p>El cliente no ha completado el pago. El stock queda reservado unos minutos y se libera solo si no paga.</p>
+                  )}
                   <form action={updateOrderStatus} className="mt-4">
                     <input type="hidden" name="id" value={order.id} />
                     <input type="hidden" name="status" value="PAID" />
-                    <ConfirmButton message="¿Confirmas que has recibido el pago por otra vía?" className="btn-outline px-4 py-2 text-xs">Marcar como pagado manualmente</ConfirmButton>
+                    <ConfirmButton message={order.paymentProvider === "transfer" ? `¿Confirmas que has recibido la transferencia de ${euros(order.total)}?` : "¿Confirmas que has recibido el pago por otra vía?"} className={order.paymentProvider === "transfer" ? "btn-primary" : "btn-outline px-4 py-2 text-xs"}>{order.paymentProvider === "transfer" ? "Transferencia recibida" : "Marcar como pagado manualmente"}</ConfirmButton>
                   </form>
                 </div>
               )}
@@ -101,7 +106,7 @@ export default async function PedidoAdmin({ params }: { params: Promise<{ id: st
               <div className="flex justify-between font-display text-xl"><dt>Total</dt><dd>{euros(order.total)}</dd></div>
             </dl>
             <p className="mt-3 text-xs text-ink-muted">
-              Pago: {order.paymentProvider === "demo" ? "demostración" : "Stripe"}{order.stripePaymentIntent ? ` · ${order.stripePaymentIntent}` : ""}
+              Pago: {{ demo: "demostración", transfer: "transferencia bancaria" }[order.paymentProvider] ?? "Stripe"}{order.stripePaymentIntent ? ` · ${order.stripePaymentIntent}` : ""}
             </p>
           </section>
 

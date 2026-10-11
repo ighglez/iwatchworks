@@ -3,14 +3,16 @@ import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { euros } from "@/lib/money";
 import { ORDER_STATUS } from "@/lib/config";
+import { releaseExpiredReservations } from "@/lib/orders";
 import { PageTitle, StatusPill, Table, fmtDate } from "../ui";
 
 export const metadata = { title: "Pedidos" };
 
 export default async function Pedidos({ searchParams }: { searchParams: Promise<{ estado?: string; q?: string }> }) {
   const { estado, q } = await searchParams;
+  await releaseExpiredReservations();
   const where: Prisma.OrderWhereInput = {
-    ...(estado && ORDER_STATUS[estado] ? { status: estado } : { status: { not: "PENDING" } }),
+    AND: [estado && ORDER_STATUS[estado] ? { status: estado } : { OR: [{ status: { not: "PENDING" } }, { paymentProvider: "transfer" }] }],
     ...(q ? { OR: [{ number: { contains: q.toUpperCase(), mode: "insensitive" } }, { email: { contains: q.toLowerCase(), mode: "insensitive" } }, { name: { contains: q, mode: "insensitive" } }] } : {}),
   };
   const [orders, counts] = await Promise.all([
@@ -41,7 +43,7 @@ export default async function Pedidos({ searchParams }: { searchParams: Promise<
         {tab("DELIVERED", "Entregados")}
         {tab("CANCELLED", "Cancelados")}
         {tab("REFUNDED", "Reembolsados")}
-        {tab("PENDING", "Sin pagar", count("PENDING"))}
+        {tab("PENDING", "Esperando pago", count("PENDING"))}
       </div>
       <Table head={["Pedido", "Fecha", "Cliente", "Artículos", "Estado", "Total"]}>
         {orders.map((o) => (

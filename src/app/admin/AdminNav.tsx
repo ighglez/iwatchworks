@@ -11,6 +11,7 @@ const ITEMS = [
   ["/admin/clientes", "Clientes"],
   ["/admin/mensajes", "Mensajes"],
   ["/admin/resenas", "Reseñas"],
+  ["/admin/ajustes", "Ajustes"],
 ] as const;
 
 export default function AdminNav({ badges }: { badges: Record<string, number> }) {

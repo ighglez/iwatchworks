@@ -16,7 +16,7 @@ export default async function Cuenta({ searchParams }: { searchParams: Promise<{
   const user = await requireUser();
   const { bienvenida } = await searchParams;
   const [orders, log, eligible] = await Promise.all([
-    db.order.findMany({ where: { userId: user.id, status: { not: "PENDING" } }, orderBy: { createdAt: "desc" }, include: { items: true } }),
+    db.order.findMany({ where: { userId: user.id, OR: [{ status: { not: "PENDING" } }, { paymentProvider: "transfer" }] }, orderBy: { createdAt: "desc" }, include: { items: true } }),
     db.pointsTransaction.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, take: 10 }),
     welcomeEligible(user.id),
   ]);

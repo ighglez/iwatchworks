@@ -5,9 +5,10 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { quote } from "@/lib/pricing";
 import { createSession, getCurrentUser, hashPassword } from "@/lib/auth";
-import { createPendingOrder, releaseExpiredReservations, StockError, cancelOrder } from "@/lib/orders";
+import { createPendingOrder, releaseExpiredReservations, StockError, cancelOrder, sendTransferInstructions } from "@/lib/orders";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
-import { demoPaymentsEnabled, getStripe, stripeEnabled } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
+import { paymentMethod } from "@/lib/payments";
 import { RULES, SITE } from "@/lib/config";
 
 export type CheckoutState = { error?: string; fieldErrors?: Record<string, string> } | null;
@@ -100,7 +101,7 @@ export async function placeOrder(_: CheckoutState, form: FormData): Promise<Chec
 
   const q = await quote(parsedItems.data, { userId: user?.id, usePoints: d.usePoints });
   if (q.lines.length === 0) return { error: q.issues[0] ?? "Los productos de tu carrito ya no están disponibles." };
-  if (q.issues.length) return { error: `${q.issues.join(" ")} Revisa el resumen y vuelve a pulsar pagar.` };
+  if (q.issues.length) return { error: `${q.issues.join(" ")} Revisa el resumen y vuelve a confirmar.` };
 
   let order;
   try {
@@ -114,7 +115,18 @@ export async function placeOrder(_: CheckoutState, form: FormData): Promise<Chec
     throw e;
   }
 
-  if (stripeEnabled()) {
+  const method = paymentMethod();
+
+  if (method === "transfer") {
+    await db.order.update({
+      where: { id: order.id },
+      data: { paymentProvider: "transfer", events: { create: { type: "NOTE", message: "Pago por transferencia bancaria: esperando el ingreso" } } },
+    });
+    await sendTransferInstructions(order.id);
+    redirect(`/checkout/exito?order=${order.number}&t=${order.accessToken}`);
+  }
+
+  if (method === "stripe") {
     let stripeUrl: string;
     try {
       const discount = q.welcomeDiscount + q.pointsDiscount;
@@ -152,7 +164,7 @@ export async function placeOrder(_: CheckoutState, form: FormData): Promise<Chec
     redirect(stripeUrl);
   }
 
-  if (demoPaymentsEnabled()) {
+  if (method === "demo") {
     await db.order.update({ where: { id: order.id }, data: { paymentProvider: "demo" } });
     redirect(`/checkout/demo?order=${order.number}&t=${order.accessToken}`);
   }

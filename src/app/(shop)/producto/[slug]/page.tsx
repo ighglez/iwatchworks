@@ -104,7 +104,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               <li className="flex items-center gap-3"><TruckIcon className="h-5 w-5 text-gold-dark" /> Envío asegurado y gratuito en 24 a 72 h</li>
               <li className="flex items-center gap-3"><ShieldIcon className="h-5 w-5 text-gold-dark" /> Nuevo, original y con 3 años de garantía</li>
               <li className="flex items-center gap-3"><ReturnIcon className="h-5 w-5 text-gold-dark" /> 14 días para devolverlo sin explicaciones</li>
-              <li className="flex items-center gap-3"><LockIcon className="h-5 w-5 text-gold-dark" /> Pago cifrado: tarjeta, Apple Pay o Google Pay</li>
+              <li className="flex items-center gap-3"><LockIcon className="h-5 w-5 text-gold-dark" /> Pago por transferencia bancaria, sin compartir tarjetas</li>
             </ul>
           </div>
         </div>

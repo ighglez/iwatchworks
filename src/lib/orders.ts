@@ -6,6 +6,7 @@ import type { Quote } from "./pricing";
 import { sendMail, escapeHtml } from "./email";
 import { euros } from "./money";
 import { getStripe, stripeEnabled } from "./stripe";
+import { formatIban, getBankDetails, transferDeadline } from "./payments";
 
 const PAID_STATES = ["PAID", "PREPARING", "SHIPPED", "DELIVERED"];
 
@@ -199,14 +200,50 @@ export async function cancelOrder(orderId: string, opts: { reason: string; actor
   });
 }
 
-/** Libera el stock de pedidos que nunca se pagaron. */
+/** Libera el stock de pedidos que nunca se pagaron (tarjeta: minutos; transferencia: días). */
 export async function releaseExpiredReservations() {
-  const limit = new Date(Date.now() - (RULES.reservationMinutes + 5) * 60_000);
-  const stale = await db.order.findMany({ where: { status: "PENDING", createdAt: { lt: limit } }, select: { id: true } });
+  const cardLimit = new Date(Date.now() - (RULES.reservationMinutes + 5) * 60_000);
+  const transferLimit = new Date(Date.now() - RULES.transferDays * 86_400_000);
+  const stale = await db.order.findMany({
+    where: {
+      status: "PENDING",
+      OR: [
+        { paymentProvider: { not: "transfer" }, createdAt: { lt: cardLimit } },
+        { paymentProvider: "transfer", createdAt: { lt: transferLimit } },
+      ],
+    },
+    select: { id: true, paymentProvider: true },
+  });
   for (const o of stale) {
-    await cancelOrder(o.id, { reason: "Pago no completado a tiempo", actor: "sistema" });
+    const reason = o.paymentProvider === "transfer" ? `Transferencia no recibida en ${RULES.transferDays} días` : "Pago no completado a tiempo";
+    await cancelOrder(o.id, { reason, actor: "sistema" });
   }
   return stale.length;
+}
+
+/** Email con los datos para hacer la transferencia. */
+export async function sendTransferInstructions(orderId: string) {
+  const order = await db.order.findUnique({ where: { id: orderId }, include: { items: true } });
+  if (!order) return;
+  const bank = await getBankDetails();
+  const deadline = transferDeadline(order.createdAt).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Madrid" });
+  const row = (k: string, v: string) => `<tr><td style="padding:6px 0;color:#7C7972">${k}</td><td style="padding:6px 0;text-align:right"><b>${escapeHtml(v)}</b></td></tr>`;
+  const items = order.items.map((i) => `<li>${escapeHtml(i.name)} × ${i.quantity}</li>`).join("");
+  await sendMail({
+    to: order.email,
+    subject: `Pedido ${order.number}: datos para la transferencia · ${SITE.name}`,
+    html: `<div style="font-family:Helvetica,Arial,sans-serif;color:#141413;max-width:560px">
+      <h1 style="font-weight:500">Tu reloj está reservado</h1>
+      <p>Gracias, ${escapeHtml(order.name.split(" ")[0])}. Para completar el pedido, haz una transferencia con estos datos antes del <b>${deadline}</b>:</p>
+      <table width="100%" style="border-top:1px solid #E2DFD6;border-bottom:1px solid #E2DFD6;margin:16px 0">
+        ${row("Titular", bank.holder)}${row("IBAN", formatIban(bank.iban))}${bank.bic ? row("BIC/SWIFT", bank.bic) : ""}${bank.bank ? row("Banco", bank.bank) : ""}
+        ${row("Importe", euros(order.total))}${row("Concepto", order.number)}
+      </table>
+      <p>Es importante indicar <b>${order.number}</b> como concepto. En cuanto recibamos el ingreso te enviaremos la confirmación y prepararemos tu pedido.</p>
+      <ul>${items}</ul>
+      <p><a href="${SITE.url}/pedido/${order.number}?t=${order.accessToken}" style="color:#7A1F2E">Ver tu pedido y los datos de pago</a></p>
+    </div>`,
+  });
 }
 
 async function sendOrderConfirmation(order: { number: string; email: string; name: string; total: number; accessToken: string; items: { name: string; quantity: number; price: number }[] }) {
@@ -220,7 +257,7 @@ async function sendOrderConfirmation(order: { number: string; email: string; nam
       <h1 style="font-weight:400">Gracias, ${escapeHtml(order.name.split(" ")[0])}</h1>
       <p>Hemos recibido tu pago. Prepararemos tu reloj con el máximo cuidado y te avisaremos al enviarlo con su número de seguimiento.</p>
       <table width="100%">${rows}<tr><td><b>Total</b></td><td style="text-align:right"><b>${euros(order.total)}</b></td></tr></table>
-      <p><a href="${SITE.url}/pedido/${order.number}?t=${order.accessToken}" style="color:#A88A4A">Ver el estado de tu pedido</a></p>
+      <p><a href="${SITE.url}/pedido/${order.number}?t=${order.accessToken}" style="color:#7A1F2E">Ver el estado de tu pedido</a></p>
     </div>`,
   });
 }
@@ -232,7 +269,7 @@ export async function notifyShipped(order: { number: string; email: string; name
     html: `<div style="font-family:Georgia,serif;color:#1a1a1a">
       <h1 style="font-weight:400">Tu reloj ya está en camino</h1>
       <p>Envío asegurado con ${escapeHtml(order.carrier || "nuestra agencia")}. Seguimiento: <b>${escapeHtml(order.trackingNumber || "-")}</b></p>
-      <p><a href="${SITE.url}/pedido/${order.number}?t=${order.accessToken}" style="color:#A88A4A">Ver pedido</a></p>
+      <p><a href="${SITE.url}/pedido/${order.number}?t=${order.accessToken}" style="color:#7A1F2E">Ver pedido</a></p>
     </div>`,
   });
 }

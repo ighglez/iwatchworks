@@ -58,7 +58,7 @@ export default function Footer() {
           </div>
         </div>
         <p className="mt-16 flex items-center gap-2 text-xs text-ink-muted">
-          <LockIcon className="h-4 w-4 text-gold" /> Pago cifrado con tarjeta, Apple Pay o Google Pay. Nunca almacenamos los datos de tu tarjeta.
+          <LockIcon className="h-4 w-4 text-gold" /> Pago por transferencia bancaria. Tu reloj queda reservado mientras haces el ingreso.
         </p>
       </div>
       <div className="border-t border-line">

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { euros } from "@/lib/money";
 import { releaseExpiredReservations } from "@/lib/orders";
+import { getBankDetails, paymentMethod } from "@/lib/payments";
 import { PageTitle, StatusPill, Table, fmtDate } from "./ui";
 
 const PAID = ["PAID", "PREPARING", "SHIPPED", "DELIVERED"];
@@ -12,13 +13,15 @@ export default async function Dashboard() {
   const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const start30 = new Date(Date.now() - 30 * 864e5);
 
-  const [today, month, toShip, customers, recent, products] = await Promise.all([
+  const [today, month, toShip, customers, recent, products, awaiting, bank] = await Promise.all([
     db.order.aggregate({ where: { status: { in: PAID }, paidAt: { gte: startToday } }, _sum: { total: true }, _count: true }),
     db.order.aggregate({ where: { status: { in: PAID }, paidAt: { gte: start30 } }, _sum: { total: true }, _count: true }),
     db.order.count({ where: { status: { in: ["PAID", "PREPARING"] } } }),
     db.user.count({ where: { role: "CUSTOMER" } }),
     db.order.findMany({ orderBy: { createdAt: "desc" }, take: 8 }),
     db.product.findMany({ where: { active: true }, orderBy: { stock: "asc" } }),
+    db.order.count({ where: { status: "PENDING", paymentProvider: "transfer" } }),
+    getBankDetails(),
   ]);
   const lowStock = products.filter((p) => p.stock <= p.lowStockThreshold);
   const avg = month._count ? Math.round((month._sum.total ?? 0) / month._count) : 0;
@@ -43,8 +46,22 @@ export default async function Dashboard() {
         ))}
       </div>
 
+      {paymentMethod() === "transfer" && !bank.configured && (
+        <Link href="/admin/ajustes" className="mt-6 flex items-center justify-between rounded-xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm text-amber-900 hover:bg-amber-100">
+          <span><b>Faltan tus datos bancarios.</b> Los clientes ven datos de ejemplo para la transferencia.</span>
+          <span className="uppercase tracking-widest">Completar →</span>
+        </Link>
+      )}
+
+      {awaiting > 0 && (
+        <Link href="/admin/pedidos?estado=PENDING" className="mt-6 flex items-center justify-between rounded-xl border border-line bg-white px-5 py-4 text-sm hover:bg-stone">
+          <span><b>{awaiting} {awaiting === 1 ? "pedido espera" : "pedidos esperan"} transferencia.</b> Márcalos como recibidos cuando veas el ingreso.</span>
+          <span className="uppercase tracking-widest">Revisar →</span>
+        </Link>
+      )}
+
       {toShip > 0 && (
-        <Link href="/admin/pedidos?estado=PAID" className="mt-6 flex items-center justify-between border border-gold bg-gold-soft px-5 py-4 text-sm hover:bg-gold-light">
+        <Link href="/admin/pedidos?estado=PAID" className="mt-6 flex items-center justify-between rounded-xl border border-gold bg-gold-soft px-5 py-4 text-sm hover:bg-gold-light">
           <span><b>{toShip} {toShip === 1 ? "pedido pagado espera" : "pedidos pagados esperan"}</b> preparación y envío.</span>
           <span className="uppercase tracking-widest">Gestionar →</span>
         </Link>

@@ -9,8 +9,10 @@ import { euros } from "@/lib/money";
 import { CheckIcon, GiftIcon } from "@/components/icons";
 import ClearPurchased from "./ClearPurchased";
 import ClaimAccount from "./ClaimAccount";
+import TransferDetails from "@/components/checkout/TransferDetails";
+import { transferProps } from "@/lib/transfer-view";
 
-export const metadata: Metadata = { title: "Pedido confirmado", robots: { index: false } };
+export const metadata: Metadata = { title: "Pedido recibido", robots: { index: false } };
 export const dynamic = "force-dynamic";
 
 export default async function Exito({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
@@ -27,6 +29,7 @@ export default async function Exito({ searchParams }: { searchParams: Promise<Re
     }
   }
   const paid = order.status !== "PENDING" && order.status !== "CANCELLED";
+  const awaitingTransfer = order.status === "PENDING" && order.paymentProvider === "transfer";
   const user = await getCurrentUser();
 
   return (
@@ -37,13 +40,21 @@ export default async function Exito({ searchParams }: { searchParams: Promise<Re
           <CheckIcon className="h-8 w-8" />
         </span>
         <p className="eyebrow mt-6">Pedido {order.number}</p>
-        <h1 className="mt-3 text-4xl md:text-5xl">{paid ? `¡Gracias, ${order.name.split(" ")[0]}!` : "Estamos confirmando tu pago"}</h1>
+        <h1 className="mt-3 text-4xl md:text-5xl">{paid || awaitingTransfer ? `¡Gracias, ${order.name.split(" ")[0]}!` : "Estamos confirmando tu pago"}</h1>
         <p className="mx-auto mt-4 max-w-lg text-ink-soft">
-          {paid
-            ? `Tu pago se ha completado. Hemos enviado la confirmación a ${order.email}. Te avisaremos con el número de seguimiento en cuanto salga tu reloj.`
-            : "Puede tardar unos segundos. Recarga esta página en un momento; te enviaremos un email en cuanto se confirme."}
+          {awaitingTransfer
+            ? `Hemos recibido tu pedido y tu reloj ya está reservado. Solo falta la transferencia: te hemos enviado estos mismos datos a ${order.email}.`
+            : paid
+              ? `Tu pago se ha completado. Hemos enviado la confirmación a ${order.email}. Te avisaremos con el número de seguimiento en cuanto salga tu reloj.`
+              : "Puede tardar unos segundos. Recarga esta página en un momento; te enviaremos un email en cuanto se confirme."}
         </p>
       </div>
+
+      {awaitingTransfer && (
+        <div className="mt-10">
+          <TransferDetails {...await transferProps(order)} />
+        </div>
+      )}
 
       <div className="card mt-10 p-6 md:p-8">
         <ul className="divide-y divide-line">
@@ -55,7 +66,7 @@ export default async function Exito({ searchParams }: { searchParams: Promise<Re
           ))}
         </ul>
         <div className="mt-3 flex justify-between border-t border-line pt-4">
-          <span>Total pagado</span>
+          <span>{paid ? "Total pagado" : "Total del pedido"}</span>
           <span className="font-display text-2xl tabular-nums">{euros(order.total)}</span>
         </div>
         <p className="mt-4 text-sm text-ink-soft">

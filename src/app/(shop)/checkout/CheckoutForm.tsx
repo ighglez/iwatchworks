@@ -23,7 +23,8 @@ type Quote = {
 
 const PROVINCES = ["A Coruña","Álava","Albacete","Alicante","Almería","Asturias","Ávila","Badajoz","Baleares","Barcelona","Burgos","Cáceres","Cádiz","Cantabria","Castellón","Ceuta","Ciudad Real","Córdoba","Cuenca","Girona","Granada","Guadalajara","Guipúzcoa","Huelva","Huesca","Jaén","La Rioja","Las Palmas","León","Lleida","Lugo","Madrid","Málaga","Melilla","Murcia","Navarra","Ourense","Palencia","Pontevedra","Salamanca","Santa Cruz de Tenerife","Segovia","Sevilla","Soria","Tarragona","Teruel","Toledo","Valencia","Valladolid","Vizcaya","Zamora","Zaragoza"];
 
-export default function CheckoutForm({ user, buyNow, cancelled }: { user: UserInfo; buyNow: PublicProduct | null; cancelled: boolean }) {
+export default function CheckoutForm({ user, buyNow, cancelled, transferDays }: { user: UserInfo; buyNow: PublicProduct | null; cancelled: boolean; transferDays: number }) {
+  const transfer = transferDays > 0;
   const cart = useCart();
   const [state, action, pending] = useActionState(placeOrder, null);
   const [createAccount, setCreateAccount] = useState(false);
@@ -78,7 +79,7 @@ export default function CheckoutForm({ user, buyNow, cancelled }: { user: UserIn
 
   return (
     <>
-      <Steps />
+      <Steps transfer={transfer} />
       <h1 className="sr-only">Finalizar compra</h1>
       {cancelled && (
         <p className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -249,6 +250,18 @@ export default function CheckoutForm({ user, buyNow, cancelled }: { user: UserIn
               </>
             )}
 
+            {transfer && (
+              <div className="mt-6 rounded-2xl border border-gold bg-gold-soft/50 p-4">
+                <p className="flex items-center gap-2 text-sm font-medium">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full border-[5px] border-gold bg-white" aria-hidden="true" />
+                  Transferencia bancaria
+                </p>
+                <p className="mt-1.5 pl-6 text-xs leading-relaxed text-ink-soft">
+                  Al confirmar verás los datos de nuestra cuenta y te los enviamos por email. Tu reloj queda reservado {transferDays} días mientras haces el ingreso.
+                </p>
+              </div>
+            )}
+
             <label className="mt-6 flex items-start gap-2 text-xs leading-relaxed text-ink-soft">
               <input type="checkbox" name="terms" checked={terms} onChange={(e) => setTerms(e.target.checked)} className="mt-0.5 h-4 w-4 accent-gold" />
               <span>He leído y acepto las <Link href="/legal/condiciones" target="_blank" className="link-gold">condiciones de venta</Link> y la <Link href="/legal/privacidad" target="_blank" className="link-gold">política de privacidad</Link>.</span>
@@ -259,9 +272,13 @@ export default function CheckoutForm({ user, buyNow, cancelled }: { user: UserIn
 
             <button disabled={pending || !q || q.lines.length === 0} className="btn-primary mt-5 w-full py-4 text-base">
               <LockIcon className="h-4 w-4" />
-              {pending ? "Conectando con el pago seguro…" : q ? `Pagar ${euros(q.total)}` : "Pagar"}
+              {transfer
+                ? pending ? "Confirmando tu pedido…" : q ? `Confirmar pedido · ${euros(q.total)}` : "Confirmar pedido"
+                : pending ? "Conectando con el pago seguro…" : q ? `Pagar ${euros(q.total)}` : "Pagar"}
             </button>
-            <p className="mt-3 text-center text-xs text-ink-muted">Serás redirigido a la pasarela segura. Tarjeta, Apple Pay o Google Pay.</p>
+            <p className="mt-3 text-center text-xs text-ink-muted">
+              {transfer ? "Sin pagos con tarjeta: pagarás con una transferencia desde tu banco." : "Serás redirigido a la pasarela segura. Tarjeta, Apple Pay o Google Pay."}
+            </p>
 
             <ul className="mt-6 grid grid-cols-3 gap-2 border-t border-line pt-5 text-center text-[11px] text-ink-soft">
               <li><ShieldIcon className="mx-auto mb-1 h-5 w-5 text-gold-dark" />100% original</li>
@@ -284,8 +301,8 @@ function Row({ label, value, accent }: { label: string; value: string; accent?: 
   );
 }
 
-function Steps() {
-  const steps = ["Carrito", "Datos y envío", "Pago seguro", "Confirmación"];
+function Steps({ transfer }: { transfer: boolean }) {
+  const steps = ["Carrito", "Datos y envío", transfer ? "Confirmar pedido" : "Pago seguro", transfer ? "Transferencia" : "Confirmación"];
   return (
     <ol className="mb-10 flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest sm:gap-4">
       {steps.map((s, i) => (

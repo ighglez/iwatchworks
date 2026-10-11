@@ -6,12 +6,14 @@ import { euros } from "@/lib/money";
 import { ORDER_STATUS } from "@/lib/config";
 import { CheckIcon } from "@/components/icons";
 import ReviewForm from "@/components/forms/ReviewForm";
+import TransferDetails from "@/components/checkout/TransferDetails";
+import { transferProps } from "@/lib/transfer-view";
 
 export const metadata: Metadata = { title: "Tu pedido", robots: { index: false } };
 export const dynamic = "force-dynamic";
 
 const FLOW = ["PAID", "PREPARING", "SHIPPED", "DELIVERED"];
-const FLOW_LABEL: Record<string, string> = { PAID: "Pagado", PREPARING: "En preparación", SHIPPED: "Enviado", DELIVERED: "Entregado" };
+const FLOW_LABEL: Record<string, string> = { PAID: "Pago recibido", PREPARING: "En preparación", SHIPPED: "Enviado", DELIVERED: "Entregado" };
 
 export default async function OrderPage({ params, searchParams }: { params: Promise<{ number: string }>; searchParams: Promise<{ t?: string }> }) {
   const { number } = await params;
@@ -44,6 +46,12 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
             </li>
           ))}
         </ol>
+      )}
+
+      {order.status === "PENDING" && order.paymentProvider === "transfer" && (
+        <div className="mt-10">
+          <TransferDetails {...await transferProps(order)} />
+        </div>
       )}
 
       {order.trackingNumber && (

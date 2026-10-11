@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { SITE } from "@/lib/config";
+import { RULES, SITE } from "@/lib/config";
 
 // Plantillas orientativas: revísalas con tu asesor antes de publicar.
 const L = SITE.legal;
@@ -19,7 +19,7 @@ const PAGES: Record<string, { title: string; body: [string, string][] }> = {
       ["Responsable", `${L.company} (${L.taxId}), ${L.address}. Contacto: ${SITE.email}.`],
       ["Datos y finalidad", "Tratamos los datos que nos facilitas para gestionar tus pedidos, tu cuenta y tus consultas, y, si lo autorizas, enviarte novedades."],
       ["Base legal", "Ejecución del contrato de compraventa, obligaciones legales (facturación) y tu consentimiento para comunicaciones comerciales."],
-      ["Pagos", "Los pagos los procesa Stripe Payments Europe Ltd. No almacenamos los datos de tu tarjeta."],
+      ["Pagos", "Los pagos se realizan por transferencia bancaria a nuestra cuenta. No solicitamos ni almacenamos datos de tarjetas."],
       ["Conservación", "Conservamos los datos mientras mantengas tu cuenta y durante los plazos legales aplicables."],
       ["Tus derechos", `Puedes ejercer tus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad escribiendo a ${SITE.email}, y reclamar ante la AEPD (aepd.es).`],
     ],
@@ -28,16 +28,15 @@ const PAGES: Record<string, { title: string; body: [string, string][] }> = {
     title: "Política de cookies",
     body: [
       ["Qué usamos", "Solo cookies y almacenamiento técnico imprescindibles: la sesión de tu cuenta (iw_session) y tu carrito en el navegador. No usamos cookies de publicidad ni de analítica de terceros."],
-      ["Pasarela de pago", "Al pagar, Stripe puede usar sus propias cookies técnicas para prevenir el fraude."],
     ],
   },
   condiciones: {
     title: "Condiciones de venta",
     body: [
-      ["Precios", "Todos los precios incluyen IVA. El envío asegurado es gratuito salvo que se indique lo contrario al pagar."],
-      ["Pedido y pago", "El contrato se perfecciona al confirmarse el pago. Recibirás un email de confirmación y la factura estará disponible en tu pedido."],
+      ["Precios", "Todos los precios incluyen IVA. El envío asegurado es gratuito salvo que se indique lo contrario al hacer el pedido."],
+      ["Pedido y pago", `El pago se realiza por transferencia bancaria, indicando el número de pedido como concepto. Reservamos el reloj durante ${RULES.transferDays} días; si en ese plazo no recibimos el ingreso, el pedido se cancela automáticamente. El contrato se perfecciona al confirmarse el pago: recibirás un email y la factura estará disponible en tu pedido.`],
       ["Envío", "Enviamos a España peninsular y Baleares con agencia urgente y seguro. Plazo orientativo: 24-72 h laborables."],
-      ["Desistimiento", "Dispones de 14 días naturales desde la entrega para desistir sin justificación. El reloj debe estar sin usar y con precintos y embalaje originales. Reembolsaremos el importe en un máximo de 14 días por el mismo medio de pago."],
+      ["Desistimiento", "Dispones de 14 días naturales desde la entrega para desistir sin justificación. El reloj debe estar sin usar y con precintos y embalaje originales. Reembolsaremos el importe en un máximo de 14 días por transferencia a la cuenta que nos indiques."],
       ["Garantía", "Los productos cuentan con la garantía legal de 3 años conforme al Real Decreto Legislativo 1/2007."],
       ["Club y puntos", "1 punto por cada euro pagado. Cada 100 puntos equivalen a 5 € de descuento, con un máximo del 30% del pedido. El 5% de bienvenida se aplica una sola vez en la primera compra con cuenta. Los puntos no son canjeables por dinero."],
     ],
