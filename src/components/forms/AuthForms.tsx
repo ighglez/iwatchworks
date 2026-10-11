@@ -3,7 +3,7 @@
 import Form from "@/components/forms/Form";
 import Link from "next/link";
 import { useActionState } from "react";
-import { changePassword, login, register, requestPasswordReset, resetPassword, updateProfile, type AuthState } from "@/app/actions/auth";
+import { changePassword, login, register, requestPasswordReset, resetPassword, updateProfile, type AuthState, verifyLoginCode } from "@/app/actions/auth";
 
 function Msg({ state }: { state: AuthState }) {
   if (state?.error) return <p role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{state.error}</p>;
@@ -29,6 +29,20 @@ export function LoginForm({ next }: { next?: string }) {
       </div>
       <Msg state={state} />
       <button disabled={pending} className="btn-primary w-full">{pending ? "Entrando…" : "Iniciar sesión"}</button>
+    </Form>
+  );
+}
+
+export function TwoFactorForm() {
+  const [state, action, pending] = useActionState(verifyLoginCode, null);
+  return (
+    <Form action={action} className="space-y-4">
+      <div>
+        <label className="label" htmlFor="code">Código de 6 cifras</label>
+        <input id="code" name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9 ]{6,7}" maxLength={7} required autoFocus className="input text-center font-mono text-2xl tracking-[0.4em]" />
+      </div>
+      <Msg state={state} />
+      <button disabled={pending} className="btn-primary w-full">{pending ? "Comprobando…" : "Verificar y entrar"}</button>
     </Form>
   );
 }

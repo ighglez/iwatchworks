@@ -25,6 +25,10 @@ model User {
   postalCode            String?
   province              String?
   country               String?   @default("ES")
+  // Verificación en dos pasos (app de autenticación), solo para administración
+  totpSecret            String?
+  totpPendingSecret     String?
+  totpLastStep          Int?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   sessions              Session[]
@@ -213,4 +217,27 @@ model Upload {
   size      Int
   data      Bytes
   createdAt DateTime @default(now())
+}
+
+/// Paso intermedio del inicio de sesión cuando hay verificación en dos pasos.
+model LoginChallenge {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  next      String?
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+/// Registro de acciones sensibles (accesos al panel, datos bancarios, pagos confirmados).
+model AuditLog {
+  id        String   @id @default(cuid())
+  actor     String
+  action    String
+  detail    String?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }

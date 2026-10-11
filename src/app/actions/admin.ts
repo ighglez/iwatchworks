@@ -6,6 +6,13 @@ import { randomBytes } from "crypto";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
+import QRCode from "qrcode";
+import { createSession, verifyPassword } from "@/lib/auth";
+import { verifyTotp, newTotpSecret, otpauthUrl } from "@/lib/totp";
+import { audit } from "@/lib/audit";
+import { rateLimit } from "@/lib/rate-limit";
+import { sendMail, escapeHtml } from "@/lib/email";
+import { SITE } from "@/lib/config";
 import { cancelOrder, markOrderPaid, notifyShipped } from "@/lib/orders";
 import { centsFromEuroInput } from "@/lib/money";
 import { slugify } from "@/lib/product";
@@ -33,6 +40,7 @@ export async function updateOrderStatus(form: FormData) {
   if (status === "PAID") {
     // Pago confirmado manualmente (p. ej. transferencia)
     await markOrderPaid(id, null);
+    await audit(admin.email, order.paymentProvider === "transfer" ? "Transferencia marcada como recibida" : "Pedido marcado como pagado", `${order.number} · ${(order.total / 100).toFixed(2)} €`);
     await db.orderEvent.create({ data: { orderId: id, type: "NOTE", message: order.paymentProvider === "transfer" ? `Transferencia recibida, confirmada por ${admin.email}` : `Pago marcado manualmente por ${admin.email}` } });
   } else if (status === "SHIPPED") {
     const carrier = z.string().trim().min(2).max(60).safeParse(form.get("carrier"));
@@ -60,7 +68,8 @@ export async function adminCancelOrder(form: FormData) {
   const admin = await requireAdmin();
   const id = String(form.get("id"));
   const reason = String(form.get("reason") || "Cancelado por la tienda").slice(0, 200);
-  await cancelOrder(id, { reason, actor: admin.email, refund: form.get("refund") === "on" });
+  const o = await cancelOrder(id, { reason, actor: admin.email, refund: form.get("refund") === "on" });
+  await audit(admin.email, "Pedido cancelado", `${o?.number ?? id} · ${reason}`);
   revalidatePath(`/admin/pedidos/${id}`);
 }
 
@@ -232,6 +241,18 @@ function validIban(raw: string) {
   return rem === 1 ? iban : null;
 }
 
+/** Confirma la identidad antes de una acción sensible: contraseña y, si está activa, código 2FA. */
+async function confirmIdentity(admin: { id: string; email: string; passwordHash: string; totpSecret: string | null; totpLastStep: number | null }, form: FormData) {
+  if (!(await rateLimit(`sensitive:${admin.id}`, 8, 900))) return "Demasiados intentos. Espera 15 minutos.";
+  if (!(await verifyPassword(String(form.get("password") || ""), admin.passwordHash))) return "La contraseña no es correcta.";
+  if (admin.totpSecret) {
+    const step = verifyTotp(admin.totpSecret, String(form.get("code") || ""), admin.totpLastStep);
+    if (step == null) return "El código de verificación no es correcto.";
+    await db.user.update({ where: { id: admin.id }, data: { totpLastStep: step } });
+  }
+  return null;
+}
+
 export async function saveBankDetails(_: AdminState, form: FormData): Promise<AdminState> {
   const admin = await requireAdmin();
   const holder = String(form.get("holder") || "").trim().slice(0, 120);
@@ -241,8 +262,62 @@ export async function saveBankDetails(_: AdminState, form: FormData): Promise<Ad
   if (holder.length < 3) return { error: "Indica el titular de la cuenta." };
   if (!iban) return { error: "El IBAN no es válido. Revisa que esté completo y sin errores." };
   if (bic && !/^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(bic)) return { error: "El BIC/SWIFT no es válido." };
-  const value = JSON.stringify({ holder, iban, bic, bank, updatedBy: admin.email });
+  const denied = await confirmIdentity(admin, form);
+  if (denied) {
+    await audit(admin.email, "Cambio de datos bancarios rechazado", denied);
+    return { error: denied };
+  }
+  const prev = await db.siteMeta.findUnique({ where: { key: "bank" } });
+  const prevIban = prev ? (JSON.parse(prev.value).iban as string | undefined) : undefined;
+  const value = JSON.stringify({ holder, iban, bic, bank, updatedBy: admin.email, updatedAt: new Date().toISOString() });
   await db.siteMeta.upsert({ where: { key: "bank" }, create: { key: "bank", value }, update: { value } });
+  const mask = (x?: string) => (x ? `${x.slice(0, 4)} •••• ${x.slice(-4)}` : "(ninguno)");
+  await audit(admin.email, "Datos bancarios cambiados", `IBAN ${mask(prevIban)} → ${mask(iban)} · Titular: ${holder}`);
+  // Aviso por email: si alguien cambia la cuenta sin permiso, lo sabrás al momento.
+  const to = [...new Set([admin.email, SITE.email])];
+  for (const t of to) {
+    await sendMail({
+      to: t,
+      subject: "Aviso de seguridad: datos bancarios cambiados · IWatchWorks",
+      html: `<p>Se han cambiado los datos bancarios de la tienda desde el panel (${escapeHtml(admin.email)}).</p><p>IBAN nuevo: <b>${escapeHtml(mask(iban))}</b><br>Titular: <b>${escapeHtml(holder)}</b></p><p>Si no has sido tú, entra en el panel, corrige los datos y cambia tu contraseña de inmediato.</p>`,
+    });
+  }
   revalidatePath("/admin");
   return { ok: true, message: "Datos bancarios guardados. Ya aparecen en los nuevos pedidos." };
+}
+
+/* ---------- Verificación en dos pasos ---------- */
+
+export async function startTwoFactor(): Promise<{ secret?: string; qr?: string; error?: string }> {
+  const admin = await requireAdmin();
+  if (admin.totpSecret) return { error: "La verificación en dos pasos ya está activa." };
+  const secret = newTotpSecret();
+  await db.user.update({ where: { id: admin.id }, data: { totpPendingSecret: secret } });
+  const qr = await QRCode.toDataURL(otpauthUrl(secret, admin.email), { margin: 1, width: 220, color: { dark: "#141413", light: "#ffffff" } });
+  return { secret, qr };
+}
+
+export async function enableTwoFactor(_: AdminState, form: FormData): Promise<AdminState> {
+  const admin = await requireAdmin();
+  if (!(await rateLimit(`2fa:${admin.id}`, 8, 900))) return { error: "Demasiados intentos. Espera 15 minutos." };
+  if (!admin.totpPendingSecret) return { error: "Vuelve a pulsar «Activar» para generar un código nuevo." };
+  const step = verifyTotp(admin.totpPendingSecret, String(form.get("code") || ""));
+  if (step == null) return { error: "El código no coincide. Comprueba que la hora del móvil es correcta y prueba con el código actual." };
+  await db.user.update({ where: { id: admin.id }, data: { totpSecret: admin.totpPendingSecret, totpPendingSecret: null, totpLastStep: step } });
+  // Cierra el resto de sesiones del administrador
+  await db.session.deleteMany({ where: { userId: admin.id } });
+  await createSession(admin.id);
+  await audit(admin.email, "Verificación en dos pasos activada");
+  revalidatePath("/admin/ajustes");
+  return { ok: true, message: "Verificación en dos pasos activada. A partir de ahora te pediremos el código al entrar." };
+}
+
+export async function disableTwoFactor(_: AdminState, form: FormData): Promise<AdminState> {
+  const admin = await requireAdmin();
+  const denied = await confirmIdentity(admin, form);
+  if (denied) return { error: denied };
+  await db.user.update({ where: { id: admin.id }, data: { totpSecret: null, totpPendingSecret: null, totpLastStep: null } });
+  await audit(admin.email, "Verificación en dos pasos desactivada");
+  revalidatePath("/admin/ajustes");
+  return { ok: true, message: "Verificación en dos pasos desactivada." };
 }

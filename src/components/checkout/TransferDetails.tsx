@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckIcon } from "../icons";
+import { CheckIcon, ShieldIcon } from "../icons";
 
 type Props = {
   holder: string; iban: string; bic: string; bank: string; configured: boolean;
@@ -47,6 +47,10 @@ export default function TransferDetails(p: Props) {
         <Row label="Importe" value={p.amount} copy={p.amount.replace(/[^\d,]/g, "")} strong />
         <Row label="Concepto" value={p.concept} copy={p.concept} strong />
       </dl>
+      <p className="mt-5 flex gap-2.5 rounded-xl bg-stone p-3.5 text-xs leading-relaxed text-ink-soft">
+        <ShieldIcon className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
+        <span><b className="text-ink">Por tu seguridad:</b> nunca te pediremos que pagues a otra cuenta por email, WhatsApp o teléfono. Si recibes un mensaje con un IBAN distinto, no transfieras y escríbenos.</span>
+      </p>
       <ol className="mt-6 grid gap-4 text-sm text-ink-soft sm:grid-cols-3">
         {[
           ["1", "Haz la transferencia", "Desde tu banco, con el número de pedido como concepto."],

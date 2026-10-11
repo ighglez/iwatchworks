@@ -1,14 +1,15 @@
 "use client";
 
+import Form from "@/components/forms/Form";
 import { useActionState } from "react";
 import { saveBankDetails } from "@/app/actions/admin";
 
 type B = { holder: string; iban: string; bic: string; bank: string };
 
-export default function BankForm({ initial }: { initial: B }) {
+export default function BankForm({ initial, needsCode }: { initial: B; needsCode: boolean }) {
   const [state, action, pending] = useActionState(saveBankDetails, null);
   return (
-    <form action={action} className="mt-6 space-y-4">
+    <Form action={action} className="mt-6 space-y-4">
       <div>
         <label className="label" htmlFor="holder">Titular de la cuenta</label>
         <input id="holder" name="holder" defaultValue={initial.holder} required maxLength={120} className="input" placeholder="Nombre o razón social" />
@@ -27,9 +28,24 @@ export default function BankForm({ initial }: { initial: B }) {
           <input id="bank" name="bank" defaultValue={initial.bank} maxLength={80} className="input" />
         </div>
       </div>
+      <div className="rounded-2xl bg-stone p-4">
+        <p className="text-xs text-ink-soft">Por seguridad, confirma que eres tú. Te avisaremos por email de cada cambio.</p>
+        <div className={`mt-3 grid gap-4 ${needsCode ? "sm:grid-cols-2" : ""}`}>
+          <div>
+            <label className="label" htmlFor="bank-password">Tu contraseña</label>
+            <input id="bank-password" name="password" type="password" required autoComplete="current-password" className="input" />
+          </div>
+          {needsCode && (
+            <div>
+              <label className="label" htmlFor="bank-code">Código de verificación</label>
+              <input id="bank-code" name="code" inputMode="numeric" autoComplete="one-time-code" required maxLength={7} className="input font-mono tracking-widest" />
+            </div>
+          )}
+        </div>
+      </div>
       {state?.error && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{state.error}</p>}
       {state?.message && <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{state.message}</p>}
       <button disabled={pending} className="btn-primary">{pending ? "Guardando…" : "Guardar datos bancarios"}</button>
-    </form>
+    </Form>
   );
 }

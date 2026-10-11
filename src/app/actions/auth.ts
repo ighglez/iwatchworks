@@ -3,7 +3,11 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { createSession, destroySession, getCurrentUser, hashPassword, verifyPassword } from "@/lib/auth";
+import { cookies } from "next/headers";
+import { randomBytes } from "crypto";
+import { createSession, destroySession, getCurrentUser, hashPassword, hashToken, verifyPassword } from "@/lib/auth";
+import { verifyTotp } from "@/lib/totp";
+import { audit } from "@/lib/audit";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 export type AuthState = { error?: string; ok?: boolean; message?: string } | null;
@@ -25,9 +29,48 @@ export async function login(_: AuthState, form: FormData): Promise<AuthState> {
   }
   const user = await db.user.findUnique({ where: { email } });
   const ok = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH);
-  if (!user || !ok) return { error: "Email o contraseña incorrectos." };
+  if (!user || !ok) {
+    if (user?.role === "ADMIN") await audit(email, "Acceso al panel fallido", "Contraseña incorrecta");
+    return { error: "Email o contraseña incorrectos." };
+  }
+  const next = safeNext(form.get("next"), user.role === "ADMIN" ? "/admin" : "/cuenta");
+  if (user.totpSecret) {
+    // Segundo paso: código de la app de autenticación
+    const token = randomBytes(32).toString("base64url");
+    await db.loginChallenge.deleteMany({ where: { OR: [{ userId: user.id }, { expiresAt: { lt: new Date() } }] } });
+    await db.loginChallenge.create({ data: { tokenHash: hashToken(token), userId: user.id, next, expiresAt: new Date(Date.now() + 5 * 60_000) } });
+    (await cookies()).set(CHALLENGE_COOKIE, token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict", path: "/", maxAge: 300 });
+    redirect("/iniciar-sesion/verificacion");
+  }
   await createSession(user.id);
-  redirect(safeNext(form.get("next"), user.role === "ADMIN" ? "/admin" : "/cuenta"));
+  if (user.role === "ADMIN") await audit(user.email, "Acceso al panel");
+  redirect(next);
+}
+
+const CHALLENGE_COOKIE = "iw_2fa";
+
+export async function verifyLoginCode(_: AuthState, form: FormData): Promise<AuthState> {
+  const jar = await cookies();
+  const token = jar.get(CHALLENGE_COOKIE)?.value;
+  const challenge = token ? await db.loginChallenge.findUnique({ where: { tokenHash: hashToken(token) } }) : null;
+  if (!challenge || challenge.expiresAt < new Date() || challenge.attempts >= 5) {
+    if (challenge) await db.loginChallenge.delete({ where: { id: challenge.id } }).catch(() => {});
+    jar.delete(CHALLENGE_COOKIE);
+    return { error: "La verificación ha caducado. Vuelve a iniciar sesión." };
+  }
+  const user = await db.user.findUnique({ where: { id: challenge.userId } });
+  const step = user?.totpSecret ? verifyTotp(user.totpSecret, String(form.get("code") || ""), user.totpLastStep) : null;
+  if (!user || step == null) {
+    await db.loginChallenge.update({ where: { id: challenge.id }, data: { attempts: { increment: 1 } } });
+    if (user) await audit(user.email, "Código de verificación incorrecto");
+    return { error: "Código incorrecto. Revisa la app y prueba con el código actual." };
+  }
+  await db.user.update({ where: { id: user.id }, data: { totpLastStep: step } });
+  await db.loginChallenge.delete({ where: { id: challenge.id } });
+  jar.delete(CHALLENGE_COOKIE);
+  await createSession(user.id);
+  if (user.role === "ADMIN") await audit(user.email, "Acceso al panel", "Con verificación en dos pasos");
+  redirect(challenge.next || "/admin");
 }
 
 const registerSchema = z.object({
@@ -94,6 +137,7 @@ export async function changePassword(_: AuthState, form: FormData): Promise<Auth
   // Cierra el resto de sesiones abiertas
   await db.session.deleteMany({ where: { userId: user.id } });
   await createSession(user.id);
+  if (user.role === "ADMIN") await audit(user.email, "Contraseña cambiada");
   return { ok: true, message: "Contraseña actualizada. Hemos cerrado tus otras sesiones." };
 }
 

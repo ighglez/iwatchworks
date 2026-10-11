@@ -101,6 +101,11 @@ async function main() {
     create: { email, name: "Administración", role: "ADMIN", passwordHash: await bcrypt.hash(password, 12) },
     update: { role: "ADMIN" },
   });
+  // Recuperación si se pierde el móvil: define ADMIN_RESET_2FA=true en Vercel, vuelve a desplegar y quítala después.
+  if (process.env.ADMIN_RESET_2FA === "true") {
+    await db.user.update({ where: { email }, data: { totpSecret: null, totpPendingSecret: null, totpLastStep: null } });
+    console.log("Verificación en dos pasos del administrador desactivada (ADMIN_RESET_2FA).");
+  }
 
   for (const p of products) {
     const { artwork, specs, ...rest } = p;

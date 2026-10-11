@@ -8,8 +8,9 @@ import { db } from "./db";
 
 export const SESSION_COOKIE = "iw_session";
 const SESSION_DAYS = 30;
+const ADMIN_SESSION_HOURS = 12; // el panel pide volver a entrar cada día
 
-function hashToken(token: string) {
+export function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
@@ -23,7 +24,8 @@ export async function verifyPassword(password: string, hash: string) {
 
 export async function createSession(userId: string) {
   const token = randomBytes(32).toString("base64url");
-  const expiresAt = new Date(Date.now() + SESSION_DAYS * 864e5);
+  const u = await db.user.findUnique({ where: { id: userId }, select: { role: true } });
+  const expiresAt = new Date(Date.now() + (u?.role === "ADMIN" ? ADMIN_SESSION_HOURS * 3600_000 : SESSION_DAYS * 864e5));
   await db.session.create({ data: { tokenHash: hashToken(token), userId, expiresAt } });
   const jar = await cookies();
   jar.set(SESSION_COOKIE, token, {

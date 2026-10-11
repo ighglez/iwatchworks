@@ -239,6 +239,7 @@ export async function sendTransferInstructions(orderId: string) {
         ${row("Titular", bank.holder)}${row("IBAN", formatIban(bank.iban))}${bank.bic ? row("BIC/SWIFT", bank.bic) : ""}${bank.bank ? row("Banco", bank.bank) : ""}
         ${row("Importe", euros(order.total))}${row("Concepto", order.number)}
       </table>
+      <p style="background:#F3F0EA;padding:12px;border-radius:10px;font-size:13px"><b>Por tu seguridad:</b> nunca te pediremos que pagues a otra cuenta por email, WhatsApp o teléfono. Antes de transferir, comprueba que el IBAN coincide con el que aparece en tu pedido en nuestra web.</p>
       <p>Es importante indicar <b>${order.number}</b> como concepto. En cuanto recibamos el ingreso te enviaremos la confirmación y prepararemos tu pedido.</p>
       <ul>${items}</ul>
       <p><a href="${SITE.url}/pedido/${order.number}?t=${order.accessToken}" style="color:#7A1F2E">Ver tu pedido y los datos de pago</a></p>
