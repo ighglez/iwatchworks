@@ -27,6 +27,7 @@ const schema = z.object({
   createAccount: z.boolean(),
   password: z.string().max(200).optional(),
   usePoints: z.boolean(),
+  code: z.string().trim().max(40).optional(),
   saveAddress: z.boolean(),
   terms: z.literal(true, { errorMap: () => ({ message: "Debes aceptar las condiciones de venta" }) }),
 });
@@ -57,6 +58,7 @@ export async function placeOrder(_: CheckoutState, form: FormData): Promise<Chec
     createAccount: form.get("createAccount") === "on",
     password: form.get("password") || undefined,
     usePoints: form.get("usePoints") === "on",
+    code: String(form.get("code") || "") || undefined,
     saveAddress: form.get("saveAddress") === "on",
     terms: form.get("terms") === "on",
   });
@@ -99,8 +101,9 @@ export async function placeOrder(_: CheckoutState, form: FormData): Promise<Chec
 
   await releaseExpiredReservations();
 
-  const q = await quote(parsedItems.data, { userId: user?.id, usePoints: d.usePoints });
+  const q = await quote(parsedItems.data, { userId: user?.id, usePoints: d.usePoints, code: d.code, email: user?.email ?? d.email });
   if (q.lines.length === 0) return { error: q.issues[0] ?? "Los productos de tu carrito ya no están disponibles." };
+  if (d.code && q.codeError) return { error: `Código ${d.code.toUpperCase()}: ${q.codeError} Quítalo o cámbialo y vuelve a confirmar.` };
   if (q.issues.length) return { error: `${q.issues.join(" ")} Revisa el resumen y vuelve a confirmar.` };
 
   let order;
@@ -129,10 +132,10 @@ export async function placeOrder(_: CheckoutState, form: FormData): Promise<Chec
   if (method === "stripe") {
     let stripeUrl: string;
     try {
-      const discount = q.welcomeDiscount + q.pointsDiscount;
+      const discount = q.welcomeDiscount + q.codeDiscount + q.pointsDiscount;
       const stripe = getStripe();
       const coupon = discount > 0
-        ? await stripe.coupons.create({ amount_off: discount, currency: "eur", duration: "once", name: q.pointsDiscount && q.welcomeDiscount ? "Bienvenida + puntos" : q.welcomeDiscount ? "Bienvenida 5%" : "Canje de puntos", max_redemptions: 1 })
+        ? await stripe.coupons.create({ amount_off: discount, currency: "eur", duration: "once", name: [q.welcomeDiscount && "Bienvenida 5%", q.discountCode && `Código ${q.discountCode}`, q.pointsDiscount && "Puntos"].filter(Boolean).join(" + "), max_redemptions: 1 })
         : null;
       const session = await stripe.checkout.sessions.create({
         mode: "payment",

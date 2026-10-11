@@ -44,6 +44,7 @@ export default async function Factura({ params, searchParams }: { params: Promis
             </tr>
           ))}
           {order.welcomeDiscount > 0 && <tr><td colSpan={3} className="py-2">Descuento bienvenida</td><td className="py-2 text-right">−{euros(order.welcomeDiscount)}</td></tr>}
+          {order.codeDiscount > 0 && <tr><td colSpan={3} className="py-2">Código de descuento {order.discountCode}</td><td className="py-2 text-right">−{euros(order.codeDiscount)}</td></tr>}
           {order.pointsDiscount > 0 && <tr><td colSpan={3} className="py-2">Descuento por puntos</td><td className="py-2 text-right">−{euros(order.pointsDiscount)}</td></tr>}
           <tr><td colSpan={3} className="py-2">Envío asegurado</td><td className="py-2 text-right">{euros(order.shipping)}</td></tr>
         </tbody>

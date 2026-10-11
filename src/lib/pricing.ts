@@ -3,6 +3,7 @@ import { db } from "./db";
 import { RULES } from "./config";
 import { parseImages } from "./product";
 import { welcomeEligible } from "./auth";
+import { checkCode, codeLabel } from "./discounts";
 
 export type CartInput = { productId: string; quantity: number }[];
 
@@ -26,6 +27,14 @@ export type Quote = {
   subtotal: number;
   welcomeDiscount: number;
   welcomeEligible: boolean;
+  /** Código de descuento aplicado (normalizado) y su importe. */
+  discountCode: string | null;
+  discountLabel: string | null;
+  codeDiscount: number;
+  /** Motivo por el que el código escrito no se ha aplicado. */
+  codeError: string | null;
+  /** El código sustituye al 5% de bienvenida (no se suman); el 5% queda para otra compra. */
+  welcomeReplaced: boolean;
   pointsAvailable: number;
   pointsMaxRedeemable: number;
   pointsRedeemed: number;
@@ -55,7 +64,7 @@ export function pointsValue(points: number) {
  */
 export async function quote(
   rawItems: CartInput,
-  opts: { userId?: string | null; usePoints?: boolean; welcome?: boolean } = {},
+  opts: { userId?: string | null; usePoints?: boolean; welcome?: boolean; code?: string | null; email?: string | null } = {},
 ): Promise<Quote> {
   const items = normalizeCart(rawItems).slice(0, 30);
   const products = await db.product.findMany({
@@ -97,16 +106,37 @@ export async function quote(
 
   let eligible = false;
   let pointsAvailable = 0;
+  let email = opts.email ?? null;
   if (opts.userId) {
     eligible = await welcomeEligible(opts.userId);
-    const u = await db.user.findUnique({ where: { id: opts.userId }, select: { points: true } });
+    const u = await db.user.findUnique({ where: { id: opts.userId }, select: { points: true, email: true } });
     pointsAvailable = u?.points ?? 0;
+    email = u?.email ?? email;
   } else if (opts.welcome) {
     eligible = true;
   }
-  const welcomeDiscount = eligible ? Math.round((subtotal * RULES.welcomeDiscountPercent) / 100) : 0;
+  let welcomeDiscount = eligible ? Math.round((subtotal * RULES.welcomeDiscountPercent) / 100) : 0;
 
-  const afterWelcome = subtotal - welcomeDiscount;
+  // Código de descuento: no se suma al 5% de bienvenida, se aplica el mayor de los dos.
+  let codeDiscount = 0;
+  let discountCode: string | null = null;
+  let discountLabel: string | null = null;
+  let codeError: string | null = null;
+  let welcomeReplaced = false;
+  if (opts.code && lines.length) {
+    const r = await checkCode(opts.code, { subtotal, email });
+    if (!r.code) codeError = r.error;
+    else if (r.amount < welcomeDiscount) codeError = `Tu ${RULES.welcomeDiscountPercent}% de bienvenida te ahorra más que este código, así que mantenemos el 5%.`;
+    else {
+      codeDiscount = r.amount;
+      discountCode = r.code.code;
+      discountLabel = codeLabel(r.code);
+      welcomeReplaced = welcomeDiscount > 0;
+      welcomeDiscount = 0;
+    }
+  }
+
+  const afterWelcome = subtotal - welcomeDiscount - codeDiscount;
   const maxByRatio = Math.floor((afterWelcome * RULES.maxPointsDiscountRatio) / RULES.pointsBlockValueCents);
   const maxBlocks = Math.max(0, Math.min(Math.floor(pointsAvailable / RULES.pointsBlock), maxByRatio));
   const pointsMaxRedeemable = maxBlocks * RULES.pointsBlock;
@@ -122,6 +152,11 @@ export async function quote(
     subtotal,
     welcomeDiscount,
     welcomeEligible: eligible,
+    discountCode,
+    discountLabel,
+    codeDiscount,
+    codeError,
+    welcomeReplaced,
     pointsAvailable,
     pointsMaxRedeemable,
     pointsRedeemed,

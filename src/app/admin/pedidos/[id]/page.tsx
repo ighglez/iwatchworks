@@ -101,6 +101,7 @@ export default async function PedidoAdmin({ params }: { params: Promise<{ id: st
             <dl className="mt-2 space-y-1 border-t border-line pt-3 text-sm">
               <div className="flex justify-between"><dt className="text-ink-muted">Subtotal</dt><dd>{euros(order.subtotal)}</dd></div>
               {order.welcomeDiscount > 0 && <div className="flex justify-between"><dt className="text-ink-muted">Bienvenida 5%</dt><dd>−{euros(order.welcomeDiscount)}</dd></div>}
+              {order.codeDiscount > 0 && <div className="flex justify-between"><dt className="text-ink-muted">Código {order.discountCode}</dt><dd>−{euros(order.codeDiscount)}</dd></div>}
               {order.pointsDiscount > 0 && <div className="flex justify-between"><dt className="text-ink-muted">Puntos ({order.pointsRedeemed})</dt><dd>−{euros(order.pointsDiscount)}</dd></div>}
               <div className="flex justify-between"><dt className="text-ink-muted">Envío</dt><dd>{euros(order.shipping)}</dd></div>
               <div className="flex justify-between font-display text-xl"><dt>Total</dt><dd>{euros(order.total)}</dd></div>

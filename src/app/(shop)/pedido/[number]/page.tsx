@@ -75,6 +75,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
           <dl className="mt-3 space-y-1.5 border-t border-line pt-3 text-sm">
             <div className="flex justify-between"><dt className="text-ink-soft">Subtotal</dt><dd>{euros(order.subtotal)}</dd></div>
             {order.welcomeDiscount > 0 && <div className="flex justify-between text-emerald-700"><dt>Bienvenida 5%</dt><dd>−{euros(order.welcomeDiscount)}</dd></div>}
+            {order.codeDiscount > 0 && <div className="flex justify-between text-emerald-700"><dt>Código {order.discountCode}</dt><dd>−{euros(order.codeDiscount)}</dd></div>}
             {order.pointsDiscount > 0 && <div className="flex justify-between text-emerald-700"><dt>{order.pointsRedeemed} puntos</dt><dd>−{euros(order.pointsDiscount)}</dd></div>}
             <div className="flex justify-between"><dt className="text-ink-soft">Envío asegurado</dt><dd>{order.shipping ? euros(order.shipping) : "Gratis"}</dd></div>
             <div className="flex justify-between border-t border-line pt-2 font-display text-xl"><dt>Total</dt><dd>{euros(order.total)}</dd></div>

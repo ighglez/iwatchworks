@@ -52,6 +52,15 @@ export async function createPendingOrder(q: Quote, customer: CustomerData, userI
       if (res.count !== 1) throw new StockError("Tus puntos han cambiado; revisa el pedido.");
     }
 
+    if (q.discountCode) {
+      const dc = tx.discountCode.fields;
+      const res = await tx.discountCode.updateMany({
+        where: { code: q.discountCode, active: true, OR: [{ maxUses: null }, { uses: { lt: dc.maxUses } }] },
+        data: { uses: { increment: 1 } },
+      });
+      if (res.count !== 1) throw new StockError("El código de descuento se acaba de agotar; quítalo y vuelve a confirmar.");
+    }
+
     const order = await tx.order.create({
       data: {
         number: orderNumber(),
@@ -69,6 +78,8 @@ export async function createPendingOrder(q: Quote, customer: CustomerData, userI
         subtotal: q.subtotal,
         welcomeDiscount: q.welcomeDiscount,
         pointsDiscount: q.pointsDiscount,
+        discountCode: q.discountCode,
+        codeDiscount: q.codeDiscount,
         pointsRedeemed: q.pointsRedeemed,
         shipping: q.shipping,
         total: q.total,
@@ -192,6 +203,9 @@ export async function cancelOrder(orderId: string, opts: { reason: string; actor
       if (wasPaid && order.welcomeDiscount > 0) {
         await tx.user.update({ where: { id: order.userId }, data: { welcomeDiscountUsed: false } });
       }
+    }
+    if (order.discountCode) {
+      await tx.discountCode.updateMany({ where: { code: order.discountCode, uses: { gt: 0 } }, data: { uses: { decrement: 1 } } });
     }
     await tx.orderEvent.create({
       data: { orderId, type: wasPaid ? "REFUNDED" : "CANCELLED", message: `${wasPaid ? "Reembolsado" : "Cancelado"}: ${opts.reason}` },

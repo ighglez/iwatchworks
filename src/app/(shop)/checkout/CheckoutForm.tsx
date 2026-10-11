@@ -19,6 +19,7 @@ type Quote = {
   issues: string[];
   subtotal: number; welcomeDiscount: number; pointsDiscount: number; pointsRedeemed: number; pointsMaxRedeemable: number;
   pointsAvailable: number; shipping: number; total: number; pointsToEarn: number; welcomeEligible: boolean;
+  discountCode: string | null; discountLabel: string | null; codeDiscount: number; codeError: string | null; welcomeReplaced: boolean;
 };
 
 const PROVINCES = ["A Coruña","Álava","Albacete","Alicante","Almería","Asturias","Ávila","Badajoz","Baleares","Barcelona","Burgos","Cáceres","Cádiz","Cantabria","Castellón","Ceuta","Ciudad Real","Córdoba","Cuenca","Girona","Granada","Guadalajara","Guipúzcoa","Huelva","Huesca","Jaén","La Rioja","Las Palmas","León","Lleida","Lugo","Madrid","Málaga","Melilla","Murcia","Navarra","Ourense","Palencia","Pontevedra","Salamanca","Santa Cruz de Tenerife","Segovia","Sevilla","Soria","Tarragona","Teruel","Toledo","Valencia","Valladolid","Vizcaya","Zamora","Zaragoza"];
@@ -32,6 +33,11 @@ export default function CheckoutForm({ user, buyNow, cancelled, transferDays }: 
   const [terms, setTerms] = useState(false);
   const [saveAddress, setSaveAddress] = useState(true);
   const [q, setQ] = useState<Quote | null>(null);
+  const [code, setCode] = useState("");
+  const [codeInput, setCodeInput] = useState("");
+  const [codeOpen, setCodeOpen] = useState(false);
+  const [codeBusy, setCodeBusy] = useState(false);
+  const [codeLimit, setCodeLimit] = useState<string | null>(null);
   const [f, setF] = useState({
     email: user?.email ?? "", name: user?.name ?? "", phone: user?.phone ?? "", address: user?.address ?? "",
     postalCode: user?.postalCode ?? "", city: user?.city ?? "", province: user?.province ?? "", notes: "", password: "",
@@ -50,15 +56,33 @@ export default function CheckoutForm({ user, buyNow, cancelled, transferDays }: 
     fetch("/api/cart/quote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items, usePoints, welcome: !user && createAccount }),
+      body: JSON.stringify({ items, usePoints, welcome: !user && createAccount, code: code || undefined, email: f.email || undefined }),
       signal: ctrl.signal,
     })
-      .then((r) => r.json())
-      .then(setQ)
-      .catch(() => {});
+      .then(async (r) => {
+        const data = await r.json();
+        if (r.status === 429) { setCodeLimit(data.error); setCode(""); return; }
+        setCodeLimit(null);
+        setQ(data);
+      })
+      .catch(() => {})
+      .finally(() => setCodeBusy(false));
     return () => ctrl.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemsKey, usePoints, createAccount, cart.ready, user]);
+  }, [itemsKey, usePoints, createAccount, cart.ready, user, code]);
+
+  function applyCode() {
+    const v = codeInput.trim().toUpperCase().replace(/\s+/g, "");
+    if (!v) return;
+    setCodeBusy(true);
+    setCode(v);
+    if (v === code) setCodeBusy(false);
+  }
+  function removeCode() {
+    setCode("");
+    setCodeInput("");
+  }
+  const codeMessage = codeLimit ?? (code && q && !q.discountCode ? q.codeError : null);
 
   const fe = state?.fieldErrors ?? {};
   const err = (k: string) => fe[k] && <p className="mt-1 text-xs text-rose-700">{fe[k]}</p>;
@@ -88,6 +112,7 @@ export default function CheckoutForm({ user, buyNow, cancelled, transferDays }: 
       )}
       <form action={action} className="grid gap-10 lg:grid-cols-[1.15fr_1fr] lg:gap-14" noValidate>
         <input type="hidden" name="items" value={itemsKey} />
+        <input type="hidden" name="code" value={q?.discountCode ?? ""} />
         <div className="space-y-10">
           {/* CONTACTO */}
           <section>
@@ -184,7 +209,9 @@ export default function CheckoutForm({ user, buyNow, cancelled, transferDays }: 
           {user && (
             <section className="rounded-2xl border border-line bg-white p-5">
               <p className="flex items-center gap-2 font-medium"><GiftIcon className="h-4 w-4 text-gold-dark" /> Tus ventajas</p>
-              {user.welcomeEligible && <p className="mt-2 flex items-center gap-2 text-sm text-emerald-700"><CheckIcon className="h-4 w-4" /> 5% de bienvenida aplicado</p>}
+              {user.welcomeEligible && (q?.welcomeReplaced
+                ? <p className="mt-2 text-sm text-ink-soft">Tu 5% de bienvenida queda guardado para otra compra: el código te ahorra más.</p>
+                : <p className="mt-2 flex items-center gap-2 text-sm text-emerald-700"><CheckIcon className="h-4 w-4" /> 5% de bienvenida aplicado</p>)}
               <p className="mt-2 text-sm text-ink-soft">Tienes <b className="text-ink">{user.points} puntos</b>.</p>
               {pointsPossible > 0 ? (
                 <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm">
@@ -234,9 +261,43 @@ export default function CheckoutForm({ user, buyNow, cancelled, transferDays }: 
                   ))}
                 </ul>
                 {q.issues.length > 0 && <p className="mt-2 bg-amber-50 p-3 text-xs text-amber-900">{q.issues.join(" ")}</p>}
+
+                <div className="mt-4 border-t border-line pt-4">
+                  {q.discountCode ? (
+                    <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm">
+                      <span className="flex items-center gap-2 text-emerald-800"><CheckIcon className="h-4 w-4" /> Código <b className="font-semibold tracking-wider">{q.discountCode}</b> aplicado</span>
+                      <button type="button" onClick={removeCode} className="text-xs text-ink-soft underline-offset-2 hover:text-ink hover:underline">Quitar</button>
+                    </div>
+                  ) : !codeOpen ? (
+                    <button type="button" onClick={() => setCodeOpen(true)} className="flex items-center gap-2 text-sm text-ink-soft hover:text-gold-dark">
+                      <GiftIcon className="h-4 w-4" /> ¿Tienes un código de descuento?
+                    </button>
+                  ) : (
+                    <div className="animate-rise">
+                      <label className="label" htmlFor="discount-code">Código de descuento</label>
+                      <div className="flex gap-2">
+                        <input
+                          id="discount-code"
+                          value={codeInput}
+                          onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyCode(); } }}
+                          className="input py-2.5 uppercase tracking-wider"
+                          placeholder="Escribe tu código"
+                          autoComplete="off"
+                          autoCapitalize="characters"
+                          spellCheck={false}
+                          maxLength={30}
+                        />
+                        <button type="button" onClick={applyCode} disabled={codeBusy || !codeInput.trim()} className="btn-outline shrink-0 px-5 py-2.5">{codeBusy ? "…" : "Aplicar"}</button>
+                      </div>
+                      {codeMessage && <p role="alert" className="mt-2 text-xs text-rose-700">{codeMessage}</p>}
+                    </div>
+                  )}
+                </div>
                 <dl className="mt-4 space-y-2 border-t border-line pt-4 text-sm">
                   <Row label="Subtotal" value={euros(q.subtotal)} />
                   {q.welcomeDiscount > 0 && <Row label="Bienvenida 5%" value={`−${euros(q.welcomeDiscount)}`} accent />}
+                  {q.codeDiscount > 0 && <Row label={`Código ${q.discountCode} (${q.discountLabel})`} value={`−${euros(q.codeDiscount)}`} accent />}
                   {q.pointsDiscount > 0 && <Row label={`${q.pointsRedeemed} puntos`} value={`−${euros(q.pointsDiscount)}`} accent />}
                   <Row label="Envío asegurado" value={q.shipping ? euros(q.shipping) : "Gratis"} accent={!q.shipping} />
                 </dl>
