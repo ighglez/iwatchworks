@@ -3,15 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { randomBytes } from "crypto";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { cancelOrder, markOrderPaid, notifyShipped } from "@/lib/orders";
 import { centsFromEuroInput } from "@/lib/money";
 import { slugify } from "@/lib/product";
-import { uploadDir } from "@/lib/uploads";
+import { MAX_IMAGE_BYTES, imageExt, isImageUrl } from "@/lib/uploads";
 
 export type AdminState = { error?: string; ok?: boolean; message?: string } | null;
 
@@ -86,27 +84,18 @@ const productSchema = z.object({
   active: z.boolean(),
 });
 
-const ALLOWED_IMG = new Map([["image/jpeg", "jpg"], ["image/png", "png"], ["image/webp", "webp"], ["image/avif", "avif"]]);
-
-async function saveUploads(files: File[]) {
-  const urls: string[] = [];
-  const dir = uploadDir();
-  await mkdir(dir, { recursive: true });
-  for (const f of files) {
-    if (!f || f.size === 0) continue;
-    const ext = ALLOWED_IMG.get(f.type);
-    if (!ext) throw new Error("Solo se permiten imágenes JPG, PNG, WEBP o AVIF.");
-    if (f.size > 5 * 1024 * 1024) throw new Error("Cada imagen debe pesar menos de 5 MB.");
-    const buf = Buffer.from(await f.arrayBuffer());
-    // Comprobación de firma real del archivo (no fiarse del tipo declarado)
-    const sig = buf.subarray(0, 12).toString("hex");
-    const okSig = sig.startsWith("ffd8ff") || sig.startsWith("89504e47") || (sig.startsWith("52494646") && buf.subarray(8, 12).toString() === "WEBP") || buf.subarray(4, 12).toString().startsWith("ftypavi");
-    if (!okSig) throw new Error("El archivo no es una imagen válida.");
-    const name = `${Date.now()}-${randomBytes(6).toString("hex")}.${ext}`;
-    await writeFile(path.join(dir, name), buf);
-    urls.push(`/uploads/${name}`);
-  }
-  return urls;
+/** Sube una foto (ya reducida en el navegador) y devuelve su URL. Se guarda en la base de datos. */
+export async function uploadProductImage(form: FormData): Promise<{ url?: string; error?: string }> {
+  await requireAdmin();
+  const f = form.get("file");
+  if (!(f instanceof File) || f.size === 0) return { error: "No se ha recibido ninguna imagen." };
+  if (f.size > MAX_IMAGE_BYTES) return { error: "La imagen es demasiado grande (máximo 3 MB)." };
+  const buf = Buffer.from(await f.arrayBuffer());
+  const ext = imageExt(buf);
+  if (!ext) return { error: "El archivo no es una imagen JPG, PNG, WEBP o AVIF válida." };
+  const mime = { jpg: "image/jpeg", png: "image/png", webp: "image/webp", avif: "image/avif" }[ext]!;
+  const up = await db.upload.create({ data: { mime, size: buf.length, data: buf } });
+  return { url: `/uploads/${up.id}.${ext}` };
 }
 
 function parseSpecs(text: string) {
@@ -119,10 +108,7 @@ function parseSpecs(text: string) {
 }
 
 function parseImageUrls(text: string) {
-  return text
-    .split("\n")
-    .map((s) => s.trim())
-    .filter((s) => /^https:\/\/res\.cloudinary\.com\//.test(s) || /^\/uploads\/[\w.-]+$/.test(s));
+  return [...new Set(text.split("\n").map((s) => s.trim()).filter(isImageUrl))].slice(0, 12);
 }
 
 export async function saveProduct(_: AdminState, form: FormData): Promise<AdminState> {
@@ -144,17 +130,7 @@ export async function saveProduct(_: AdminState, form: FormData): Promise<AdminS
   const compareRaw = String(form.get("compareAtPrice") || "").trim();
   const compareAtPrice = compareRaw ? centsFromEuroInput(compareRaw) : null;
 
-  let uploaded: string[] = [];
-  try {
-    uploaded = await saveUploads(form.getAll("files").filter((f): f is File => f instanceof File));
-  } catch (e) {
-    const code = (e as NodeJS.ErrnoException).code;
-    if (code === "EROFS" || code === "EACCES" || code === "ENOENT") {
-      return { error: "Este hosting no permite guardar archivos. Sube las fotos a Cloudinary y pega aquí sus enlaces." };
-    }
-    return { error: (e as Error).message };
-  }
-  const images = [...parseImageUrls(String(form.get("images") || "")), ...uploaded];
+  const images = parseImageUrls(String(form.get("images") || ""));
   const specs = parseSpecs(String(form.get("specs") || ""));
   const data = { ...parsed.data, price, compareAtPrice, images: JSON.stringify(images), specs: JSON.stringify(specs) };
 

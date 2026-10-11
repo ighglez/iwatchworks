@@ -205,3 +205,12 @@ model SiteMeta {
   value     String
   updatedAt DateTime @updatedAt
 }
+
+/// Fotos subidas desde el panel. Se guardan en la base de datos porque el disco de Vercel es de solo lectura.
+model Upload {
+  id        String   @id @default(cuid())
+  mime      String
+  size      Int
+  data      Bytes
+  createdAt DateTime @default(now())
+}

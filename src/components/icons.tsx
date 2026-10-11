@@ -70,3 +70,6 @@ export const WhatsappIcon = ({ className }: P) => (
 export const ArrowIcon = (p: P) => (
   <Svg {...p}><path d="M5 12h14M13 6l6 6-6 6" /></Svg>
 );
+export const SearchIcon = (p: P) => (
+  <Svg {...p}><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4.2-4.2" /></Svg>
+);

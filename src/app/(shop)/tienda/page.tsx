@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import { toPublic } from "@/lib/product";
+import { matchesQuery, toPublic } from "@/lib/product";
 import ProductCard from "@/components/product/ProductCard";
 
 export const metadata: Metadata = { title: "Colección", description: "Relojes automáticos japoneses seleccionados: GMT, cronógrafos y más. Envío asegurado gratuito." };
@@ -32,13 +32,13 @@ export default async function Tienda({ searchParams }: { searchParams: SP }) {
     ...(categoria ? { category: categoria } : {}),
     ...(marca ? { brand: marca } : {}),
     ...(disponibles ? { stock: { gt: 0 } } : {}),
-    ...(q ? { OR: [{ name: { contains: q, mode: "insensitive" } }, { reference: { contains: q, mode: "insensitive" } }, { brand: { contains: q, mode: "insensitive" } }] } : {}),
   };
 
-  const [products, facets] = await Promise.all([
+  const [all, facets] = await Promise.all([
     db.product.findMany({ where, orderBy: SORTS[orden].orderBy }),
     db.product.findMany({ where: { active: true }, select: { category: true, brand: true } }),
   ]);
+  const products = q ? all.filter((p) => matchesQuery(p, q)) : all;
   const categories = [...new Set(facets.map((f) => f.category))].sort();
   const brands = [...new Set(facets.map((f) => f.brand))].sort();
 

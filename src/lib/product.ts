@@ -64,3 +64,11 @@ export function slugify(s: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
+
+const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+/** Búsqueda sin tildes ni mayúsculas: cada palabra debe aparecer en marca, modelo, referencia o categoría. */
+export function matchesQuery(p: { name: string; brand: string; reference: string; category: string }, q: string) {
+  const hay = norm(`${p.brand} ${p.name} ${p.reference} ${p.category}`);
+  return norm(q).split(/\s+/).filter(Boolean).slice(0, 6).every((w) => hay.includes(w));
+}

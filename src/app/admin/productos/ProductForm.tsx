@@ -1,9 +1,9 @@
 "use client";
 
 import Form from "@/components/forms/Form";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { saveProduct } from "@/app/actions/admin";
-import WatchImage from "@/components/WatchImage";
+import ImageManager from "./ImageManager";
 
 type P = {
   id?: string; name: string; brand: string; reference: string; category: string; description: string;
@@ -13,6 +13,7 @@ type P = {
 
 export default function ProductForm({ product, categories }: { product?: P; categories: string[] }) {
   const [state, action, pending] = useActionState(saveProduct, null);
+  const [uploading, setUploading] = useState(false);
   const p: P = product ?? { name: "", brand: "Seiko", reference: "", category: "", description: "", price: "", compareAtPrice: "", lowStockThreshold: 2, featured: false, active: true, images: [], specs: "Movimiento: \nCaja: \nCristal: \nHermeticidad: \nCorrea: " };
 
   return (
@@ -37,17 +38,7 @@ export default function ProductForm({ product, categories }: { product?: P; cate
           <label className="label" htmlFor="specs">Características <span className="normal-case tracking-normal text-ink-muted">(una por línea: Nombre: valor)</span></label>
           <textarea id="specs" name="specs" rows={6} defaultValue={p.specs} className="input font-mono text-xs" />
         </div>
-        <div>
-          <label className="label" htmlFor="images">Imágenes <span className="normal-case tracking-normal text-ink-muted">(URLs de Cloudinary, una por línea; la primera es la principal)</span></label>
-          <textarea id="images" name="images" rows={3} defaultValue={p.images.join("\n")} className="input font-mono text-xs" />
-          {p.images.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {p.images.map((src) => <div key={src} className="h-20 w-20 overflow-hidden border border-line"><WatchImage src={src} alt="" sizes="100px" className="h-full w-full" /></div>)}
-            </div>
-          )}
-          <label className="label mt-4" htmlFor="files">O sube fotos desde tu ordenador</label>
-          <input id="files" name="files" type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple className="text-sm" />
-        </div>
+        <ImageManager initial={p.images} onBusy={setUploading} />
       </div>
 
       <div className="space-y-6">
@@ -61,9 +52,9 @@ export default function ProductForm({ product, categories }: { product?: P; cate
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="featured" defaultChecked={p.featured} className="accent-gold" /> Destacado en la portada</label>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="active" defaultChecked={p.active} className="accent-gold" /> Visible en la tienda</label>
         </div>
-        {state?.error && <p role="alert" className="border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{state.error}</p>}
-        {state?.message && <p className="border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{state.message}</p>}
-        <button disabled={pending} className="btn-primary w-full">{pending ? "Guardando…" : p.id ? "Guardar cambios" : "Crear producto"}</button>
+        {state?.error && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{state.error}</p>}
+        {state?.message && <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{state.message}</p>}
+        <button disabled={pending || uploading} className="btn-primary w-full">{uploading ? "Subiendo fotos…" : pending ? "Guardando…" : p.id ? "Guardar cambios" : "Crear producto"}</button>
         {p.id && <p className="text-xs text-ink-muted">El stock se modifica desde Inventario para que quede registrado cada movimiento.</p>}
       </div>
     </Form>

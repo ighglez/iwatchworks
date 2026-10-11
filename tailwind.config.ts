@@ -26,12 +26,14 @@ export default {
       },
       keyframes: {
         "slide-in": { from: { transform: "translateX(100%)" }, to: { transform: "translateX(0)" } },
+        "slide-in-left": { from: { transform: "translateX(-100%)" }, to: { transform: "translateX(0)" } },
         "fade-in": { from: { opacity: "0" }, to: { opacity: "1" } },
         rise: { from: { opacity: "0", transform: "translateY(16px)" }, to: { opacity: "1", transform: "translateY(0)" } },
         float: { "0%,100%": { transform: "translateY(0)" }, "50%": { transform: "translateY(-8px)" } },
       },
       animation: {
         "slide-in": "slide-in .45s cubic-bezier(.2,.8,.2,1)",
+        "slide-in-left": "slide-in-left .4s cubic-bezier(.2,.8,.2,1)",
         "fade-in": "fade-in .3s ease-out",
         rise: "rise .6s cubic-bezier(.2,.8,.2,1) both",
         float: "float 7s ease-in-out infinite",
