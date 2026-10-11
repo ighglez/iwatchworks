@@ -14,6 +14,7 @@ export type PublicProduct = {
   lowStockThreshold: number;
   images: string[];
   specs: Record<string, string>;
+  artwork: string;
   featured: boolean;
 };
 
@@ -50,6 +51,7 @@ export function toPublic(p: Product): PublicProduct {
     lowStockThreshold: p.lowStockThreshold,
     images: parseImages(p.images),
     specs: parseSpecs(p.specs),
+    artwork: p.artwork,
     featured: p.featured,
   };
 }

@@ -18,28 +18,18 @@ export default function AddToCartButton({ product, variant = "card" }: Props) {
     brand: product.brand,
     reference: product.reference,
     image: product.images[0] ?? null,
+    art: product.artwork,
     price: product.price,
     stock: product.stock,
   };
 
-  if (variant === "card") {
-    return (
-      <button
-        disabled={soldOut}
-        onClick={() => add(item)}
-        className="btn-outline w-full py-3 text-xs uppercase tracking-[0.15em]"
-      >
-        {soldOut ? "Agotado" : <><BagIcon className="h-4 w-4" /> Añadir al carrito</>}
-      </button>
-    );
-  }
-
+  void variant;
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <button disabled={soldOut} onClick={() => router.push(`/checkout?comprar=${product.id}`)} className="btn-primary py-4 text-base">
+      <button disabled={soldOut} onClick={() => router.push(`/checkout?comprar=${product.id}`)} className="btn-primary py-4 text-[15px]">
         <BoltIcon className="h-4 w-4 text-gold" /> {soldOut ? "Agotado" : "Comprar ya"}
       </button>
-      <button disabled={soldOut} onClick={() => add(item)} className="btn-outline py-4 text-base">
+      <button disabled={soldOut} onClick={() => add(item)} className="btn-outline py-4 text-[15px]">
         <BagIcon className="h-4 w-4" /> Añadir al carrito
       </button>
     </div>

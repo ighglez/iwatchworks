@@ -5,13 +5,13 @@ import { db } from "@/lib/db";
 import { toPublic } from "@/lib/product";
 import ProductCard from "@/components/product/ProductCard";
 
-export const metadata: Metadata = { title: "Tienda", description: "Relojes automáticos japoneses: Seiko, GMT, cronógrafos y más." };
+export const metadata: Metadata = { title: "Colección", description: "Relojes automáticos japoneses seleccionados: GMT, cronógrafos y más. Envío asegurado gratuito." };
 export const dynamic = "force-dynamic";
 
 const SORTS: Record<string, { label: string; orderBy: Prisma.ProductOrderByWithRelationInput[] }> = {
   relevancia: { label: "Relevancia", orderBy: [{ featured: "desc" }, { createdAt: "desc" }] },
-  "precio-asc": { label: "Precio: menor a mayor", orderBy: [{ price: "asc" }] },
-  "precio-desc": { label: "Precio: mayor a menor", orderBy: [{ price: "desc" }] },
+  "precio-asc": { label: "Precio ascendente", orderBy: [{ price: "asc" }] },
+  "precio-desc": { label: "Precio descendente", orderBy: [{ price: "desc" }] },
   novedades: { label: "Novedades", orderBy: [{ createdAt: "desc" }] },
   nombre: { label: "Nombre A-Z", orderBy: [{ name: "asc" }] },
 };
@@ -51,48 +51,52 @@ export default async function Tienda({ searchParams }: { searchParams: SP }) {
   };
 
   const chip = (active: boolean) =>
-    `border px-4 py-2 text-xs uppercase tracking-widest transition ${active ? "border-ink bg-ink text-ivory" : "border-line bg-white text-ink-soft hover:border-ink"}`;
+    `whitespace-nowrap rounded-full px-5 py-2.5 text-sm transition ${active ? "bg-ink text-ivory" : "bg-stone text-ink-soft hover:bg-ivory-dark hover:text-ink"}`;
+
+  const title = categoria === "Cronógrafo" ? "Cronógrafos" : categoria ?? "La colección";
 
   return (
-    <div className="container-x py-12 md:py-16">
-      <header className="mb-10 text-center">
-        <p className="eyebrow">Tienda</p>
-        <h1 className="mt-3 text-5xl md:text-6xl">Nuestra colección</h1>
-        <p className="mx-auto mt-4 max-w-xl text-ink-soft">Explora nuestra selección exclusiva de relojes automáticos japoneses.</p>
+    <div className="container-x pb-24 pt-12 md:pt-20">
+      <header className="max-w-2xl">
+        <p className="eyebrow">Colección</p>
+        <h1 className="mt-4 text-5xl md:text-7xl">{title}</h1>
+        <p className="lead mt-5">Relojes automáticos y de alta precisión, seleccionados uno a uno. Todos nuevos, originales y con envío asegurado.</p>
       </header>
 
-      <div className="mb-8 flex flex-col gap-4 border-y border-line py-5 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap gap-2">
-          <Link href={href({ categoria: undefined })} className={chip(!categoria)}>Todos</Link>
-          {categories.map((c) => (
-            <Link key={c} href={href({ categoria: c })} className={chip(categoria === c)}>{c}</Link>
-          ))}
-          {brands.length > 1 && brands.map((b) => (
-            <Link key={b} href={href({ marca: marca === b ? undefined : b })} className={chip(marca === b)}>{b}</Link>
-          ))}
-          <Link href={href({ disponibles: disponibles ? undefined : "1" })} className={chip(disponibles)}>Solo disponibles</Link>
+      <div className="sticky top-16 z-20 -mx-5 mt-12 border-b border-line bg-ivory/90 px-5 py-4 backdrop-blur-xl sm:-mx-8 sm:px-8 md:top-[76px] lg:-mx-12 lg:px-12">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:pb-0">
+            <Link href={href({ categoria: undefined })} className={chip(!categoria)}>Todos</Link>
+            {categories.map((c) => (
+              <Link key={c} href={href({ categoria: c })} className={chip(categoria === c)}>{c}</Link>
+            ))}
+            {brands.length > 1 && brands.map((b) => (
+              <Link key={b} href={href({ marca: marca === b ? undefined : b })} className={chip(marca === b)}>{b}</Link>
+            ))}
+            <Link href={href({ disponibles: disponibles ? undefined : "1" })} className={chip(disponibles)}>Disponibles</Link>
+          </div>
+          <form className="flex gap-2" action="/tienda">
+            {categoria && <input type="hidden" name="categoria" value={categoria} />}
+            {marca && <input type="hidden" name="marca" value={marca} />}
+            {disponibles && <input type="hidden" name="disponibles" value="1" />}
+            <input name="q" defaultValue={q} placeholder="Buscar modelo o referencia" className="input rounded-full py-2.5 lg:w-60" aria-label="Buscar" />
+            <select name="orden" defaultValue={orden} className="input w-auto rounded-full py-2.5" aria-label="Ordenar">
+              {Object.entries(SORTS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+            </select>
+            <button className="btn-primary px-5 py-2.5">Aplicar</button>
+          </form>
         </div>
-        <form className="flex gap-2" action="/tienda">
-          {categoria && <input type="hidden" name="categoria" value={categoria} />}
-          {marca && <input type="hidden" name="marca" value={marca} />}
-          {disponibles && <input type="hidden" name="disponibles" value="1" />}
-          <input name="q" defaultValue={q} placeholder="Buscar modelo o referencia" className="input w-full py-2 lg:w-56" aria-label="Buscar" />
-          <select name="orden" defaultValue={orden} className="input w-auto py-2" aria-label="Ordenar">
-            {Object.entries(SORTS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-          </select>
-          <button className="btn-primary px-4 py-2">Aplicar</button>
-        </form>
       </div>
 
-      <p className="mb-6 text-sm text-ink-muted">{products.length} {products.length === 1 ? "reloj" : "relojes"}</p>
+      <p className="mb-8 mt-8 text-sm text-ink-muted">{products.length} {products.length === 1 ? "reloj" : "relojes"}</p>
       {products.length ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {products.map((p) => <ProductCard key={p.id} product={toPublic(p)} />)}
+        <div className="grid gap-x-6 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+          {products.map((p, i) => <ProductCard key={p.id} product={toPublic(p)} priority={i < 3} />)}
         </div>
       ) : (
-        <div className="py-20 text-center">
-          <p className="font-serif text-2xl">No hay relojes con estos filtros</p>
-          <Link href="/tienda" className="btn-outline mt-6">Ver toda la colección</Link>
+        <div className="rounded-3xl bg-stone py-24 text-center">
+          <p className="text-2xl font-semibold">No hay relojes con estos filtros</p>
+          <Link href="/tienda" className="btn-outline mt-8">Ver toda la colección</Link>
         </div>
       )}
     </div>

@@ -9,9 +9,9 @@ export default function AuthShell({ title, eyebrow, children }: { title: string;
         <h1 className="mb-8 mt-3 text-4xl">{title}</h1>
         {children}
       </div>
-      <div className="flex flex-col justify-center bg-ink p-8 text-ivory md:p-10">
-        <p className="eyebrow !text-gold">Club IWatchWorks</p>
-        <p className="mt-4 font-serif text-3xl leading-snug">Ventajas para quienes vuelven</p>
+      <div className="flex flex-col justify-center rounded-3xl bg-night p-8 text-ivory md:p-12">
+        <p className="eyebrow-light">Club IWatchWorks</p>
+        <p className="mt-4 font-display text-3xl leading-snug">Ventajas para quienes vuelven</p>
         <ul className="mt-6 space-y-3 text-sm text-ivory/80">
           {[
             `${RULES.welcomeDiscountPercent}% de descuento en tu primera compra`,

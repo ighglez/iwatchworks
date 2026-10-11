@@ -9,6 +9,7 @@ export type CartItem = {
   brand: string;
   reference: string;
   image: string | null;
+  art?: string;
   price: number;
   stock: number;
   quantity: number;
@@ -80,6 +81,7 @@ export function CartProvider({ children, viewer }: { children: React.ReactNode; 
             brand: l.brand,
             reference: l.reference,
             image: l.image,
+            art: l.art,
             price: l.price,
             stock: l.stock,
             quantity: l.quantity,

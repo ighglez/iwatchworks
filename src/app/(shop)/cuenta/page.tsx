@@ -33,17 +33,17 @@ export default async function Cuenta({ searchParams }: { searchParams: Promise<{
       </div>
 
       {bienvenida && (
-        <p className="mt-6 flex items-center gap-2 border border-gold-light bg-gold-soft p-4 text-sm">
+        <p className="mt-6 flex items-center gap-2 rounded-2xl border border-gold-light bg-gold-soft p-4 text-sm">
           <GiftIcon className="h-5 w-5 text-gold-dark" /> ¡Bienvenido al club! Tu 5% se aplicará automáticamente en tu primera compra.
         </p>
       )}
 
       <div className="mt-10 grid gap-6 md:grid-cols-3">
-        <div className="bg-ink p-7 text-ivory md:col-span-1">
-          <p className="eyebrow !text-gold">Tus puntos</p>
-          <p className="mt-3 font-serif text-6xl text-gold">{user.points}</p>
+        <div className="rounded-3xl bg-night p-8 text-ivory md:col-span-1">
+          <p className="eyebrow-light">Tus puntos</p>
+          <p className="mt-3 font-display text-6xl text-gold">{user.points}</p>
           <p className="mt-1 text-sm text-ivory/70">Equivalen a {euros(pointsValue(user.points))} de descuento</p>
-          <div className="mt-5 h-1 bg-white/10"><div className="h-1 bg-gold" style={{ width: `${((RULES.pointsBlock - toNext) / RULES.pointsBlock) * 100}%` }} /></div>
+          <div className="mt-5 h-1 overflow-hidden rounded-full bg-white/10"><div className="h-1 rounded-full bg-gold" style={{ width: `${((RULES.pointsBlock - toNext) / RULES.pointsBlock) * 100}%` }} /></div>
           <p className="mt-2 text-xs text-ivory/50">Te faltan {toNext} puntos para los próximos 5 €</p>
           {eligible && <p className="mt-5 border-t border-white/10 pt-4 text-sm text-gold-light">+ 5% de bienvenida pendiente de usar</p>}
         </div>
@@ -57,13 +57,13 @@ export default async function Cuenta({ searchParams }: { searchParams: Promise<{
             <ul className="mt-4 divide-y divide-line">
               {orders.map((o) => (
                 <li key={o.id}>
-                  <Link href={`/pedido/${o.number}`} className="flex flex-wrap items-center justify-between gap-3 py-4 hover:bg-ivory">
+                  <Link href={`/pedido/${o.number}`} className="flex flex-wrap items-center justify-between gap-3 rounded-xl px-3 py-4 hover:bg-stone">
                     <div>
                       <p className="font-medium">{o.number}</p>
                       <p className="text-xs text-ink-muted">{o.createdAt.toLocaleDateString("es-ES")} · {o.items.map((i) => i.name).join(", ")}</p>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className={`border px-2 py-1 text-[10px] uppercase tracking-widest ${ORDER_STATUS[o.status]?.tone}`}>{ORDER_STATUS[o.status]?.label}</span>
+                      <span className={`rounded-full border px-3 py-1 text-[10px] uppercase tracking-widest ${ORDER_STATUS[o.status]?.tone}`}>{ORDER_STATUS[o.status]?.label}</span>
                       <span className="tabular-nums">{euros(o.total)}</span>
                     </div>
                   </Link>

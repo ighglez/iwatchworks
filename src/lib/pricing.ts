@@ -13,6 +13,7 @@ export type QuoteLine = {
   brand: string;
   reference: string;
   image: string | null;
+  art: string;
   price: number;
   quantity: number;
   stock: number;
@@ -84,6 +85,7 @@ export async function quote(
       brand: p.brand,
       reference: p.reference,
       image: parseImages(p.images)[0] ?? null,
+      art: p.artwork,
       price: p.price,
       quantity,
       stock: p.stock,

@@ -15,7 +15,7 @@ type UserInfo = {
 } | null;
 
 type Quote = {
-  lines: { productId: string; slug: string; name: string; brand: string; reference: string; image: string | null; price: number; quantity: number; lineTotal: number }[];
+  lines: { productId: string; slug: string; name: string; brand: string; reference: string; image: string | null; art: string; price: number; quantity: number; lineTotal: number }[];
   issues: string[];
   subtotal: number; welcomeDiscount: number; pointsDiscount: number; pointsRedeemed: number; pointsMaxRedeemable: number;
   pointsAvailable: number; shipping: number; total: number; pointsToEarn: number; welcomeEligible: boolean;
@@ -81,7 +81,7 @@ export default function CheckoutForm({ user, buyNow, cancelled }: { user: UserIn
       <Steps />
       <h1 className="sr-only">Finalizar compra</h1>
       {cancelled && (
-        <p className="mb-6 border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           El pago se canceló y no se ha realizado ningún cargo. Puedes intentarlo de nuevo cuando quieras.
         </p>
       )}
@@ -181,7 +181,7 @@ export default function CheckoutForm({ user, buyNow, cancelled }: { user: UserIn
           )}
 
           {user && (
-            <section className="border border-line bg-white p-5">
+            <section className="rounded-2xl border border-line bg-white p-5">
               <p className="flex items-center gap-2 font-medium"><GiftIcon className="h-4 w-4 text-gold-dark" /> Tus ventajas</p>
               {user.welcomeEligible && <p className="mt-2 flex items-center gap-2 text-sm text-emerald-700"><CheckIcon className="h-4 w-4" /> 5% de bienvenida aplicado</p>}
               <p className="mt-2 text-sm text-ink-soft">Tienes <b className="text-ink">{user.points} puntos</b>.</p>
@@ -219,13 +219,13 @@ export default function CheckoutForm({ user, buyNow, cancelled }: { user: UserIn
                 <ul className="mt-6 divide-y divide-line">
                   {q.lines.map((l) => (
                     <li key={l.productId} className="flex gap-4 py-4">
-                      <div className="relative h-20 w-20 shrink-0 border border-line bg-white">
-                        <WatchImage src={l.image} alt={l.name} sizes="100px" className="h-full w-full" />
+                      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-stone">
+                        <WatchImage src={l.image} art={l.art} alt={l.name} sizes="100px" className="h-full w-full" />
                         <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[10px] text-ivory">{l.quantity}</span>
                       </div>
                       <div className="flex-1">
                         <p className="eyebrow !tracking-[0.15em]">{l.brand}</p>
-                        <p className="font-serif text-lg leading-tight">{l.name}</p>
+                        <p className="font-display text-lg leading-tight">{l.name}</p>
                         <p className="text-xs text-ink-muted">Ref. {l.reference}</p>
                       </div>
                       <p className="text-sm tabular-nums">{euros(l.lineTotal)}</p>
@@ -241,7 +241,7 @@ export default function CheckoutForm({ user, buyNow, cancelled }: { user: UserIn
                 </dl>
                 <div className="mt-4 flex items-baseline justify-between border-t border-line pt-4">
                   <span>Total <span className="text-xs text-ink-muted">IVA incl.</span></span>
-                  <span className="font-serif text-4xl tabular-nums">{euros(q.total)}</span>
+                  <span className="font-display text-4xl tabular-nums">{euros(q.total)}</span>
                 </div>
                 {(user || createAccount) && q.pointsToEarn > 0 && (
                   <p className="mt-2 text-right text-xs text-gold-dark">Sumarás {q.pointsToEarn} puntos con esta compra</p>
@@ -255,7 +255,7 @@ export default function CheckoutForm({ user, buyNow, cancelled }: { user: UserIn
             </label>
             {err("terms")}
 
-            {state?.error && <p role="alert" className="mt-4 border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{state.error}</p>}
+            {state?.error && <p role="alert" className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{state.error}</p>}
 
             <button disabled={pending || !q || q.lines.length === 0} className="btn-primary mt-5 w-full py-4 text-base">
               <LockIcon className="h-4 w-4" />

@@ -39,7 +39,7 @@ const PAGES: Record<string, { title: string; body: [string, string][] }> = {
       ["Envío", "Enviamos a España peninsular y Baleares con agencia urgente y seguro. Plazo orientativo: 24-72 h laborables."],
       ["Desistimiento", "Dispones de 14 días naturales desde la entrega para desistir sin justificación. El reloj debe estar sin usar y con precintos y embalaje originales. Reembolsaremos el importe en un máximo de 14 días por el mismo medio de pago."],
       ["Garantía", "Los productos cuentan con la garantía legal de 3 años conforme al Real Decreto Legislativo 1/2007."],
-      ["Programa de puntos", "1 punto por cada euro pagado. Cada 100 puntos equivalen a 5 € de descuento, con un máximo del 30% del pedido. El 5% de bienvenida se aplica una sola vez en la primera compra con cuenta. Los puntos no son canjeables por dinero."],
+      ["Club y puntos", "1 punto por cada euro pagado. Cada 100 puntos equivalen a 5 € de descuento, con un máximo del 30% del pedido. El 5% de bienvenida se aplica una sola vez en la primera compra con cuenta. Los puntos no son canjeables por dinero."],
     ],
   },
   "envios-devoluciones": {
@@ -62,11 +62,12 @@ export default async function LegalPage({ params }: { params: Promise<{ slug: st
   if (!page) notFound();
   return (
     <article className="container-x max-w-3xl py-14 md:py-20">
-      <h1 className="text-5xl">{page.title}</h1>
+      <p className="eyebrow">Información legal</p>
+      <h1 className="mt-3 text-4xl md:text-5xl">{page.title}</h1>
       <div className="mt-10 space-y-8">
         {page.body.map(([h, t]) => (
-          <section key={h}>
-            <h2 className="text-2xl">{h}</h2>
+          <section key={h} id={h === "Club y puntos" ? "puntos" : undefined} className="scroll-mt-28">
+            <h2 className="text-xl">{h}</h2>
             <p className="mt-2 leading-relaxed text-ink-soft">{t}</p>
           </section>
         ))}

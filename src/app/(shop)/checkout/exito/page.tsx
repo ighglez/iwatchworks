@@ -56,7 +56,7 @@ export default async function Exito({ searchParams }: { searchParams: Promise<Re
         </ul>
         <div className="mt-3 flex justify-between border-t border-line pt-4">
           <span>Total pagado</span>
-          <span className="font-serif text-2xl tabular-nums">{euros(order.total)}</span>
+          <span className="font-display text-2xl tabular-nums">{euros(order.total)}</span>
         </div>
         <p className="mt-4 text-sm text-ink-soft">
           Envío a: {order.name}, {order.address}, {order.postalCode} {order.city} ({order.province})

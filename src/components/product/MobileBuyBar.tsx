@@ -23,13 +23,13 @@ export default function MobileBuyBar({ product }: { product: PublicProduct }) {
     <div className={`fixed inset-x-0 bottom-0 z-30 border-t border-line bg-ivory/95 px-4 py-3 backdrop-blur transition-transform lg:hidden ${show ? "translate-y-0" : "translate-y-full"}`} aria-hidden={!show}>
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
-          <p className="truncate font-serif text-lg leading-tight">{product.name}</p>
+          <p className="truncate font-display text-lg leading-tight">{product.name}</p>
           <p className="text-sm tabular-nums">{euros(product.price)}</p>
         </div>
         <button
           tabIndex={show ? 0 : -1}
           aria-label="Añadir al carrito"
-          onClick={() => add({ productId: product.id, slug: product.slug, name: product.name, brand: product.brand, reference: product.reference, image: product.images[0] ?? null, price: product.price, stock: product.stock })}
+          onClick={() => add({ productId: product.id, slug: product.slug, name: product.name, brand: product.brand, reference: product.reference, image: product.images[0] ?? null, art: product.artwork, price: product.price, stock: product.stock })}
           className="btn-outline px-3.5 py-3"
         >
           <BagIcon className="h-5 w-5" />

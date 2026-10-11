@@ -7,9 +7,9 @@ import { GiftIcon } from "@/components/icons";
 export default function ClaimAccount({ order, token, points }: { order: string; token: string; points: number }) {
   const [state, action, pending] = useActionState(claimOrderAccount, null);
   if (state?.ok)
-    return <p className="mt-8 bg-gold-soft p-5 text-center text-sm">Cuenta creada. Te hemos sumado {points} puntos. ¡Bienvenido al club!</p>;
+    return <p className="mt-8 rounded-2xl bg-gold-soft p-5 text-center text-sm">Cuenta creada. Te hemos sumado {points} puntos. ¡Bienvenido al club!</p>;
   return (
-    <form action={action} className="mt-8 border border-gold-light bg-gold-soft/50 p-6">
+    <form action={action} className="mt-8 rounded-2xl border border-gold-light bg-gold-soft/50 p-6">
       <p className="flex items-center gap-2 font-medium"><GiftIcon className="h-4 w-4 text-gold-dark" /> Guarda tus {points} puntos de esta compra</p>
       <p className="mt-1 text-sm text-ink-soft">Solo falta una contraseña: podrás seguir tu pedido y canjear los puntos en la próxima compra. Opcional.</p>
       <input type="hidden" name="order" value={order} />

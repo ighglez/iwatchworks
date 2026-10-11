@@ -37,7 +37,7 @@ export default async function Dashboard() {
         {kpis.map(([label, value, sub]) => (
           <div key={label} className="card p-5">
             <p className="text-[11px] uppercase tracking-widest text-ink-muted">{label}</p>
-            <p className="mt-2 font-serif text-4xl tabular-nums">{value}</p>
+            <p className="mt-2 font-display text-4xl tabular-nums">{value}</p>
             <p className="mt-1 text-xs text-ink-muted">{sub}</p>
           </div>
         ))}

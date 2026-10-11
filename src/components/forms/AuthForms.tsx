@@ -6,8 +6,8 @@ import { useActionState } from "react";
 import { changePassword, login, register, requestPasswordReset, resetPassword, updateProfile, type AuthState } from "@/app/actions/auth";
 
 function Msg({ state }: { state: AuthState }) {
-  if (state?.error) return <p role="alert" className="border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{state.error}</p>;
-  if (state?.message) return <p className="border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{state.message}</p>;
+  if (state?.error) return <p role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{state.error}</p>;
+  if (state?.message) return <p className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{state.message}</p>;
   return null;
 }
 

@@ -17,12 +17,12 @@ export default async function DemoPay({ searchParams }: { searchParams: Promise<
 
   return (
     <div className="container-x max-w-md py-14">
-      <p className="mb-6 border border-amber-300 bg-amber-50 p-3 text-center text-xs text-amber-900">
+      <p className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-center text-xs text-amber-900">
         MODO DEMOSTRACIÓN · Aquí aparecerá la pasarela segura de Stripe. No se realizará ningún cargo.
       </p>
       <div className="card p-8">
         <p className="eyebrow">Pedido {order.number}</p>
-        <p className="mt-2 font-serif text-4xl">{euros(order.total)}</p>
+        <p className="mt-2 font-display text-4xl">{euros(order.total)}</p>
         <div className="mt-6 space-y-3 opacity-70">
           <input disabled className="input" value="4242 4242 4242 4242" readOnly aria-label="Tarjeta de prueba" />
           <div className="grid grid-cols-2 gap-3">

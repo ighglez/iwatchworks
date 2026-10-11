@@ -2,36 +2,37 @@ import Link from "next/link";
 import type { PublicProduct } from "@/lib/product";
 import { euros } from "@/lib/money";
 import WatchImage from "../WatchImage";
-import AddToCartButton from "./AddToCartButton";
-import StockBadge from "./StockBadge";
+import QuickAdd from "./QuickAdd";
 
-export default function ProductCard({ product }: { product: PublicProduct }) {
+export default function ProductCard({ product, priority = false }: { product: PublicProduct; priority?: boolean }) {
+  const soldOut = product.stock <= 0;
+  const low = !soldOut && product.stock <= product.lowStockThreshold;
   return (
-    <article className="group flex flex-col bg-white transition hover:shadow-soft">
-      <Link href={`/producto/${product.slug}`} className="relative block aspect-square overflow-hidden bg-white">
-        <WatchImage src={product.images[0]} alt={`${product.brand} ${product.name} ${product.reference}`} className="h-full w-full transition duration-700 group-hover:scale-[1.04]" />
-        {product.compareAtPrice && product.compareAtPrice > product.price && (
-          <span className="absolute left-3 top-3 bg-gold px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-ink">Oferta</span>
-        )}
+    <article className="group relative">
+      <Link href={`/producto/${product.slug}`} className="block overflow-hidden rounded-3xl bg-stone">
+        <div className="relative aspect-[4/5]">
+          <WatchImage
+            src={product.images[0]}
+            art={product.artwork}
+            alt={`${product.brand} ${product.name} ${product.reference}`}
+            eager={priority}
+            className="absolute inset-0 h-full w-full transition duration-700 ease-out group-hover:scale-[1.035]"
+          />
+          {(low || soldOut) && (
+            <span className={`absolute left-4 top-4 rounded-full px-3 py-1 text-[11px] font-medium ${soldOut ? "bg-white/80 text-ink-soft" : "bg-white/90 text-gold-dark"}`}>
+              {soldOut ? "Agotado" : product.stock === 1 ? "Última unidad" : `Últimas ${product.stock}`}
+            </span>
+          )}
+        </div>
       </Link>
-      <div className="flex flex-1 flex-col p-5">
-        <p className="eyebrow">{product.brand}</p>
-        <Link href={`/producto/${product.slug}`} className="mt-1 font-serif text-2xl leading-tight hover:text-gold-dark">
-          {product.name}
+      <div className="flex items-start justify-between gap-4 px-1 pt-5">
+        <Link href={`/producto/${product.slug}`} className="min-w-0">
+          <p className="text-[11px] font-medium uppercase tracking-luxe text-gold-dark">{product.brand}</p>
+          <h3 className="mt-1.5 text-lg font-semibold leading-snug">{product.name}</h3>
+          <p className="mt-0.5 text-sm text-ink-muted">{product.reference}</p>
+          <p className="mt-2 text-[15px] tabular-nums">{euros(product.price)}</p>
         </Link>
-        <p className="mt-1 text-xs text-ink-muted">Ref. {product.reference}</p>
-        <div className="mt-4 flex items-end justify-between gap-2">
-          <div>
-            <p className="text-lg font-medium tabular-nums">{euros(product.price)}</p>
-            {product.compareAtPrice && product.compareAtPrice > product.price && (
-              <p className="text-xs text-ink-muted line-through">{euros(product.compareAtPrice)}</p>
-            )}
-          </div>
-          <StockBadge stock={product.stock} threshold={product.lowStockThreshold} />
-        </div>
-        <div className="mt-5">
-          <AddToCartButton product={product} />
-        </div>
+        {!soldOut && <QuickAdd product={product} />}
       </div>
     </article>
   );

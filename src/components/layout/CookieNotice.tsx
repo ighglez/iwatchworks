@@ -14,18 +14,15 @@ export default function CookieNotice() {
   }, []);
   if (!show) return null;
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-line bg-white/95 backdrop-blur">
-      <div className="container-x flex flex-col items-start gap-3 py-3 text-xs text-ink-soft sm:flex-row sm:items-center sm:justify-between">
-        <p>
-          Solo usamos cookies técnicas necesarias para el carrito, el inicio de sesión y el pago seguro. No usamos cookies publicitarias.{" "}
-          <Link href="/legal/cookies" className="link-gold">Más información</Link>
-        </p>
+    <div className="fixed inset-x-3 bottom-3 z-30 animate-rise sm:inset-x-auto sm:right-5 sm:bottom-5 sm:max-w-sm" role="region" aria-label="Aviso de cookies">
+      <div className="rounded-2xl border border-line bg-white/95 p-5 text-sm text-ink-soft shadow-soft backdrop-blur">
+        <p>Solo usamos cookies técnicas para tu carrito, tu sesión y el pago seguro. Nada de publicidad. <Link href="/legal/cookies" className="link-gold">Más información</Link></p>
         <button
           onClick={() => {
             try { localStorage.setItem(KEY, "1"); } catch {}
             setShow(false);
           }}
-          className="btn-outline shrink-0 px-4 py-2 text-xs"
+          className="btn-primary mt-4 w-full py-2.5"
         >
           Entendido
         </button>

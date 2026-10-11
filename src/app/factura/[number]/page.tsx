@@ -18,11 +18,11 @@ export default async function Factura({ params, searchParams }: { params: Promis
     <div className="mx-auto max-w-3xl bg-white p-10 text-sm text-ink print:p-0">
       <div className="flex items-start justify-between">
         <div>
-          <p className="font-serif text-3xl">IWatch<span className="text-gold-dark">Works</span></p>
+          <p className="font-display text-3xl">IWatch<span className="text-gold-dark">Works</span></p>
           <p className="mt-2 text-xs leading-relaxed text-ink-soft">{SITE.legal.company}<br />{SITE.legal.taxId}<br />{SITE.legal.address}</p>
         </div>
         <div className="text-right">
-          <p className="font-serif text-2xl">Factura</p>
+          <p className="font-display text-2xl">Factura</p>
           <p className="text-xs text-ink-soft">Nº F-{order.number.replace("IW-", "")}<br />Fecha: {order.paidAt.toLocaleDateString("es-ES")}</p>
         </div>
       </div>

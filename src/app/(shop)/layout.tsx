@@ -16,15 +16,17 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   return (
     <CartProvider viewer={viewer}>
       <a href="#contenido" className="sr-only z-[60] bg-ink px-4 py-2 text-ivory focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Saltar al contenido</a>
-      {demoPaymentsEnabled() && (
-        <p className="bg-amber-100 py-1.5 text-center text-[11px] text-amber-900">Versión de prueba: los pagos son simulados y no se cobra nada.</p>
-      )}
       <Header isAdmin={user?.role === "ADMIN"} />
       <main id="contenido" className="min-h-[60vh]">{children}</main>
       <Footer />
       <CartDrawer />
       <WelcomePopup />
       <CookieNotice />
+      {demoPaymentsEnabled() && (
+        <p className="pointer-events-none fixed bottom-3 right-3 z-20 rounded-full bg-amber-100/95 px-3 py-1.5 text-[11px] font-medium text-amber-900 shadow-sm">
+          Modo prueba · pagos simulados
+        </p>
+      )}
     </CartProvider>
   );
 }

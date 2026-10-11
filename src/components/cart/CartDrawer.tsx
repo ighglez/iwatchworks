@@ -53,7 +53,7 @@ export default function CartDrawer() {
               Añadido a tu carrito
             </p>
           ) : (
-            <p className="font-serif text-2xl">Tu carrito {count > 0 && <span className="text-base text-ink-muted">({count})</span>}</p>
+            <p className="text-xl font-semibold">Tu carrito {count > 0 && <span className="text-base text-ink-muted">({count})</span>}</p>
           )}
           <button onClick={closeCart} className="p-1 text-ink-soft hover:text-ink" aria-label="Cerrar">
             <CloseIcon />
@@ -62,7 +62,7 @@ export default function CartDrawer() {
 
         {items.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-            <p className="font-serif text-2xl">Tu carrito está vacío</p>
+            <p className="text-xl font-semibold">Tu carrito está vacío</p>
             <p className="text-sm text-ink-soft">Descubre nuestra selección de relojes automáticos japoneses.</p>
             <Link href="/tienda" onClick={closeCart} className="btn-primary mt-2">
               Ver tienda
@@ -73,17 +73,17 @@ export default function CartDrawer() {
             <ul className="flex-1 divide-y divide-line overflow-y-auto px-6">
               {items.map((i) => (
                 <li key={i.productId} className={`flex gap-4 py-5 ${i.productId === lastAddedId ? "animate-rise" : ""}`}>
-                  <Link href={`/producto/${i.slug}`} onClick={closeCart} className="h-24 w-24 shrink-0 overflow-hidden border border-line bg-white">
-                    <WatchImage src={i.image} alt={`${i.brand} ${i.name}`} sizes="100px" className="h-full w-full" />
+                  <Link href={`/producto/${i.slug}`} onClick={closeCart} className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-stone">
+                    <WatchImage src={i.image} art={i.art} alt={`${i.brand} ${i.name}`} sizes="100px" className="h-full w-full" />
                   </Link>
                   <div className="flex min-w-0 flex-1 flex-col">
                     <p className="eyebrow !tracking-[0.18em]">{i.brand}</p>
-                    <Link href={`/producto/${i.slug}`} onClick={closeCart} className="truncate font-serif text-lg leading-tight hover:text-gold-dark">
+                    <Link href={`/producto/${i.slug}`} onClick={closeCart} className="truncate font-semibold leading-tight hover:text-gold-dark">
                       {i.name}
                     </Link>
                     <p className="text-xs text-ink-muted">Ref. {i.reference}</p>
                     <div className="mt-auto flex items-center justify-between pt-2">
-                      <div className="flex items-center border border-line bg-white">
+                      <div className="flex items-center rounded-full border border-line bg-white px-1">
                         <button className="p-1.5 disabled:opacity-30" onClick={() => setQty(i.productId, i.quantity - 1)} disabled={i.quantity <= 1} aria-label="Quitar una unidad">
                           <MinusIcon className="h-3.5 w-3.5" />
                         </button>
@@ -106,7 +106,7 @@ export default function CartDrawer() {
 
             <footer className="border-t border-line bg-white px-6 pb-6 pt-5">
               {!viewer.loggedIn && (
-                <div className="mb-4 flex items-start gap-3 bg-gold-soft px-4 py-3 text-xs leading-relaxed text-ink-soft">
+                <div className="mb-4 flex items-start gap-3 rounded-2xl bg-gold-soft px-4 py-3 text-xs leading-relaxed text-ink-soft">
                   <GiftIcon className="mt-0.5 h-4 w-4 shrink-0 text-gold-dark" />
                   <p>
                     <span className="font-medium text-ink">¿Primera compra?</span> Crea tu cuenta al pagar y ahorra un 5% ({euros(savings)}). Es opcional.
@@ -114,14 +114,14 @@ export default function CartDrawer() {
                 </div>
               )}
               {viewer.loggedIn && viewer.welcomeEligible && (
-                <div className="mb-4 flex items-start gap-3 bg-gold-soft px-4 py-3 text-xs text-ink-soft">
+                <div className="mb-4 flex items-start gap-3 rounded-2xl bg-gold-soft px-4 py-3 text-xs text-ink-soft">
                   <GiftIcon className="mt-0.5 h-4 w-4 shrink-0 text-gold-dark" />
                   <p>Tu 5% de bienvenida (−{euros(savings)}) se aplicará al finalizar.</p>
                 </div>
               )}
               <div className="flex items-baseline justify-between">
                 <span className="text-sm text-ink-soft">Subtotal</span>
-                <span className="font-serif text-2xl tabular-nums">{euros(subtotal)}</span>
+                <span className="text-2xl font-semibold tabular-nums tracking-tight">{euros(subtotal)}</span>
               </div>
               <p className="mt-1 flex items-center gap-1.5 text-xs text-emerald-700">
                 <TruckIcon className="h-4 w-4" /> Envío asegurado gratuito · 24/72 h

@@ -1,249 +1,224 @@
 import Link from "next/link";
-import { existsSync } from "fs";
-import path from "path";
 import { db } from "@/lib/db";
-import { toPublic } from "@/lib/product";
+import { toPublic, type PublicProduct } from "@/lib/product";
 import { SITE, RULES } from "@/lib/config";
+import { euros } from "@/lib/money";
 import ProductCard from "@/components/product/ProductCard";
 import WatchImage from "@/components/WatchImage";
 import ContactForm from "@/components/forms/ContactForm";
-import { ChatIcon, GiftIcon, ReceiptIcon, ReturnIcon, ShieldIcon, StarIcon, TruckIcon, WhatsappIcon } from "@/components/icons";
+import { ArrowIcon, ChatIcon, ReturnIcon, ShieldIcon, StarIcon, TruckIcon, WhatsappIcon } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
 
-const TRUST = [
-  { icon: TruckIcon, title: "Envío asegurado", text: "Gratuito, con seguro a todo riesgo y número de seguimiento en cada envío." },
-  { icon: ShieldIcon, title: "Autenticidad garantizada", text: "Relojes nuevos, originales, con su caja, documentación y 3 años de garantía legal." },
-  { icon: ReceiptIcon, title: "Factura en cada pedido", text: "Recibes factura con IVA desglosado, descargable desde tu pedido." },
-  { icon: ChatIcon, title: "Atención personalizada", text: "Te asesoramos por email o WhatsApp antes y después de tu compra." },
+const SERVICE = [
+  { icon: TruckIcon, title: "Envío asegurado", text: "Gratuito, con seguimiento y entrega en mano." },
+  { icon: ShieldIcon, title: "Garantía de 3 años", text: "Relojes nuevos, originales y con factura." },
+  { icon: ReturnIcon, title: "14 días para decidir", text: "Si no es el tuyo, lo devuelves sin explicaciones." },
+  { icon: ChatIcon, title: "Asesoramiento real", text: "Una persona al otro lado, por email o WhatsApp." },
 ];
 
 const FAQ = [
   {
-    q: "¿Sois distribuidor independiente?",
-    a: "Sí. Somos un distribuidor independiente especializado en relojes automáticos japoneses. No somos distribuidor oficial de las marcas, pero todos nuestros relojes son nuevos, originales y se entregan con su caja y documentación.",
+    q: "¿Los relojes son nuevos y originales?",
+    a: "Sí, siempre. Cada pieza se revisa antes de salir y viaja con su caja, su documentación y tu factura de compra.",
   },
   {
-    q: "¿Los relojes son nuevos y auténticos?",
-    a: "Siempre. Cada reloj se revisa antes del envío y se entrega precintado, con su documentación original y factura de compra. Si tuvieras cualquier duda sobre la autenticidad, te devolvemos el importe íntegro.",
+    q: "¿Cuánto tarda en llegar mi pedido?",
+    a: "Lo preparamos en 24 horas laborables y la entrega suele producirse en 24 a 72 horas. Recibirás el número de seguimiento por email.",
   },
   {
-    q: "¿Cómo funciona el envío asegurado?",
-    a: "Enviamos en 24 h laborables con agencia urgente y seguro a todo riesgo por el valor del reloj. Recibirás un email con el número de seguimiento y el paquete se entrega en mano con firma.",
+    q: "¿Necesito una cuenta para comprar?",
+    a: `No. Puedes comprar como invitado. Si creas una cuenta, gratis, te descontamos un ${RULES.welcomeDiscountPercent}% en tu primera compra y empiezas a sumar puntos.`,
   },
   {
-    q: "¿Puedo devolver el reloj?",
-    a: "Sí, tienes 14 días naturales desde la entrega para devolverlo sin dar explicaciones, siempre que esté sin usar y con sus precintos. Te reembolsamos con el mismo método de pago.",
+    q: "¿Cómo funcionan los puntos?",
+    a: "Sumas 1 punto por cada euro. Cada 100 puntos equivalen a 5 € que puedes usar en tu siguiente compra con un solo clic.",
   },
   {
-    q: "¿Tengo que registrarme para comprar?",
-    a: `No, puedes comprar como invitado. Si creas una cuenta (también en el mismo pago) obtienes un ${RULES.welcomeDiscountPercent}% de descuento en tu primera compra y acumulas puntos: 1 punto por cada euro, y cada 100 puntos son 5 € de descuento.`,
-  },
-  {
-    q: "¿Qué métodos de pago aceptáis?",
-    a: "Tarjeta de crédito o débito (Visa, Mastercard), Apple Pay y Google Pay. El pago se procesa en una pasarela certificada PCI-DSS: nunca vemos ni guardamos los datos de tu tarjeta.",
+    q: "¿Y si cambio de opinión?",
+    a: "Tienes 14 días desde que lo recibes para devolverlo sin usar. Te reembolsamos por el mismo medio de pago.",
   },
 ];
 
+const STORIES: Record<string, { eyebrow: string; title: string; text: string }> = {
+  GMT: {
+    eyebrow: "Función GMT",
+    title: "Dos husos horarios. Una sola mirada.",
+    text: "La aguja adicional recorre la esfera una vez al día y señala la hora de casa, o la de tu próximo destino, sobre el bisel de 24 horas.",
+  },
+  Cronógrafo: {
+    eyebrow: "Cronógrafo",
+    title: "Cada segundo, medido.",
+    text: "Tres contadores y una escala taquimétrica para cronometrar, comparar y calcular velocidades. La precisión, convertida en lenguaje visual.",
+  },
+};
+
 export default async function Home() {
-  const [featuredRaw, reviews] = await Promise.all([
-    db.product.findMany({ where: { active: true }, orderBy: [{ featured: "desc" }, { createdAt: "desc" }], take: 3 }),
-    db.review.findMany({ where: { approved: true }, orderBy: { createdAt: "desc" }, take: 6 }),
+  const [all, reviews] = await Promise.all([
+    db.product.findMany({ where: { active: true }, orderBy: [{ featured: "desc" }, { createdAt: "desc" }] }),
+    db.review.findMany({ where: { approved: true }, orderBy: { createdAt: "desc" }, take: 3 }),
   ]);
-  const featured = featuredRaw.map(toPublic);
-  const hero = featured[0];
-  const hasCatalog = existsSync(path.join(process.cwd(), "public", "catalogo-2025.pdf"));
-  const avg = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
+  const products = all.map(toPublic);
+  const hero = products[0];
+  const featured = products.slice(0, 3);
+  const stories = Object.keys(STORIES)
+    .map((cat) => products.find((p) => p.category === cat))
+    .filter(Boolean) as PublicProduct[];
 
   return (
     <>
       {/* HERO */}
-      <section className="relative overflow-hidden">
-        <div className="container-x grid items-center gap-10 py-14 md:grid-cols-2 md:py-24">
-          <div className="animate-rise">
-            <p className="eyebrow">Distribuidor independiente</p>
-            <h1 className="mt-5 text-5xl font-normal leading-[1.05] md:text-7xl">
-              Creemos en el valor, la historia <em className="text-gold-dark">y la precisión.</em>
+      <section className="relative overflow-hidden bg-night text-ivory">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_60%_at_70%_45%,rgba(198,166,100,0.22),transparent_70%)]" aria-hidden="true" />
+        <div className="container-x relative grid min-h-[100svh] items-center gap-6 pb-14 pt-28 md:grid-cols-[1fr_1.05fr] md:pb-0 md:pt-20">
+          <div className="order-2 md:order-1">
+            <p className="eyebrow-light animate-rise">Relojería japonesa seleccionada</p>
+            <h1 className="mt-6 animate-rise text-[44px] leading-[1.02] [animation-delay:80ms] sm:text-6xl lg:text-[84px]">
+              El tiempo,<br />en su mejor<br /><span className="text-gold">versión.</span>
             </h1>
-            <p className="mt-6 max-w-md text-base leading-relaxed text-ink-soft">
-              Relojes automáticos japoneses seleccionados uno a uno. Nuevos, originales y enviados asegurados a tu puerta.
+            <p className="mt-7 max-w-md animate-rise text-lg leading-relaxed text-ivory/70 [animation-delay:160ms]">
+              Piezas automáticas elegidas una a una, entregadas aseguradas y con el trato de una relojería de barrio.
             </p>
-            <div className="mt-9 flex flex-wrap gap-3">
-              <Link href="/tienda" className="btn-primary px-8">Ver tienda</Link>
-              <a href={hasCatalog ? "/catalogo-2025.pdf" : "#catalogo"} className="btn-outline px-8">Descargar catálogo</a>
+            <div className="mt-10 flex animate-rise flex-wrap gap-3 [animation-delay:240ms]">
+              <Link href="/tienda" className="btn-gold px-8">Descubrir la colección</Link>
+              {hero && <Link href={`/producto/${hero.slug}`} className="btn-outline-light px-8">Ver el {hero.name}</Link>}
             </div>
-            <ul className="mt-10 flex flex-wrap gap-x-8 gap-y-3 text-sm text-ink-soft">
-              <li className="flex items-center gap-2"><TruckIcon className="h-5 w-5 text-gold-dark" /> Envío asegurado</li>
-              <li className="flex items-center gap-2"><ShieldIcon className="h-5 w-5 text-gold-dark" /> Autenticidad garantizada</li>
-              <li className="flex items-center gap-2"><ReturnIcon className="h-5 w-5 text-gold-dark" /> 14 días de devolución</li>
-            </ul>
           </div>
           {hero && (
-            <Link href={`/producto/${hero.slug}`} className="group relative block">
-              <div className="absolute -right-10 -top-10 h-72 w-72 rounded-full bg-gold-soft blur-3xl" aria-hidden="true" />
-              <div className="relative aspect-[4/5] overflow-hidden border border-line bg-white">
-                <WatchImage src={hero.images[0]} alt={`${hero.brand} ${hero.name} ${hero.reference}`} eager sizes="(min-width: 768px) 50vw, 100vw" className="h-full w-full transition duration-700 group-hover:scale-[1.03]" />
-              </div>
-              <div className="absolute -bottom-5 left-6 bg-ivory px-5 py-3 shadow-soft">
-                <p className="eyebrow">{hero.brand} · {hero.reference}</p>
-                <p className="font-serif text-xl">{hero.name}</p>
-              </div>
+            <Link href={`/producto/${hero.slug}`} className="order-1 mx-auto block w-[72%] max-w-[520px] md:order-2 md:w-full" aria-label={`${hero.brand} ${hero.name}`}>
+              <WatchImage src={hero.images[0]} art={hero.artwork} alt={`${hero.brand} ${hero.name} ${hero.reference}`} eager fit="contain" sizes="(min-width: 768px) 50vw, 80vw" className="aspect-[4/5] w-full animate-float" />
             </Link>
           )}
         </div>
+        <a href="#coleccion" className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 text-[11px] uppercase tracking-luxe text-ivory/50 hover:text-ivory md:flex">
+          Descubrir
+          <span className="h-10 w-px bg-gradient-to-b from-ivory/50 to-transparent" />
+        </a>
       </section>
 
-      {/* DESTACADOS */}
-      <section className="container-x py-16 md:py-24">
-        <div className="mb-12 text-center">
-          <p className="eyebrow">Colección</p>
-          <h2 className="mt-3 text-4xl md:text-5xl">Selección destacada</h2>
-          <div className="divider-gold mt-6" />
+      {/* COLECCIÓN */}
+      <section id="coleccion" className="container-x scroll-mt-20 py-20 md:py-32">
+        <div className="mb-12 flex flex-col justify-between gap-6 md:mb-16 md:flex-row md:items-end">
+          <div>
+            <p className="eyebrow">La selección</p>
+            <h2 className="mt-4 text-4xl md:text-6xl">Nuestros relojes</h2>
+          </div>
+          <Link href="/tienda" className="link-arrow">Ver toda la colección <ArrowIcon className="h-4 w-4" /></Link>
         </div>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {featured.map((p) => <ProductCard key={p.id} product={p} />)}
+        <div className="grid gap-x-6 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+          {featured.map((p, i) => <ProductCard key={p.id} product={p} priority={i === 0} />)}
         </div>
-        <div className="mt-12 text-center">
-          <Link href="/tienda" className="btn-outline px-10">Ver todos los relojes</Link>
+      </section>
+
+      {/* HISTORIAS */}
+      {stories.map((p, i) => {
+        const s = STORIES[p.category];
+        const dark = i % 2 === 0;
+        return (
+          <section key={p.id} className={dark ? "bg-night text-ivory" : "bg-stone"}>
+            <div className={`container-x grid items-center gap-10 py-20 md:grid-cols-2 md:gap-20 md:py-32 ${dark ? "" : "md:[&>*:first-child]:order-2"}`}>
+              <Link href={`/producto/${p.slug}`} className={`block overflow-hidden rounded-[2rem] ${dark ? "bg-night-soft" : "bg-ivory"}`}>
+                <WatchImage src={p.images[0]} art={p.artwork} alt={`${p.brand} ${p.name}`} fit="contain" sizes="(min-width: 768px) 50vw, 100vw" className="aspect-square w-full transition duration-700 hover:scale-[1.03]" />
+              </Link>
+              <div>
+                <p className={dark ? "eyebrow-light" : "eyebrow"}>{s.eyebrow}</p>
+                <h2 className="mt-5 text-4xl leading-[1.05] md:text-6xl">{s.title}</h2>
+                <p className={`mt-6 max-w-md text-lg leading-relaxed ${dark ? "text-ivory/70" : "text-ink-soft"}`}>{s.text}</p>
+                <div className="mt-10 flex flex-wrap items-center gap-6">
+                  <Link href={`/producto/${p.slug}`} className={dark ? "btn-gold" : "btn-primary"}>Descubrir el {p.name}</Link>
+                  <span className={`text-sm tabular-nums ${dark ? "text-ivory/60" : "text-ink-muted"}`}>{euros(p.price)}</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        );
+      })}
+
+      {/* SERVICIO */}
+      <section id="servicio" className="container-x scroll-mt-20 py-20 md:py-32">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="eyebrow">La experiencia IWatchWorks</p>
+          <h2 className="mt-4 text-4xl md:text-5xl">Comprar un reloj debería ser un placer</h2>
+        </div>
+        <div className="mt-16 grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
+          {SERVICE.map(({ icon: Icon, title, text }) => (
+            <div key={title} className="text-center">
+              <Icon className="mx-auto h-7 w-7 text-gold-dark" />
+              <h3 className="mt-5 text-lg">{title}</h3>
+              <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">{text}</p>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* CLUB */}
-      <section className="bg-ink text-ivory">
-        <div className="container-x grid items-center gap-10 py-16 md:grid-cols-[1.2fr_1fr] md:py-20">
-          <div>
-            <p className="eyebrow !text-gold">Club IWatchWorks</p>
-            <h2 className="mt-4 text-4xl md:text-5xl">Tu primera compra, un {RULES.welcomeDiscountPercent}% más especial</h2>
-            <p className="mt-5 max-w-lg text-ivory/70">
-              Comprar como invitado siempre es posible. Si te unes al club, gratis, disfrutas de ventajas desde el primer día.
-            </p>
-          </div>
-          <ul className="grid gap-4 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
-            {[
-              [`${RULES.welcomeDiscountPercent}%`, "en tu primera compra"],
-              ["1 punto", "por cada euro"],
-              ["100 = 5 €", "canjea tus puntos"],
-            ].map(([big, small]) => (
-              <li key={big} className="border border-white/15 p-5 text-center">
-                <p className="font-serif text-3xl text-gold">{big}</p>
-                <p className="mt-1 text-xs uppercase tracking-widest text-ivory/60">{small}</p>
-              </li>
-            ))}
-            <li className="sm:col-span-3 md:col-span-1 lg:col-span-3">
-              <Link href="/registrarse" className="btn-gold w-full"><GiftIcon className="h-4 w-4" /> Unirme gratis</Link>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      {/* CATÁLOGO */}
-      <section id="catalogo" className="container-x scroll-mt-24 py-16 md:py-24">
-        <div className="card grid items-center gap-8 p-8 md:grid-cols-[1fr_auto] md:p-12">
-          <div>
-            <p className="eyebrow">Catálogo completo 2025</p>
-            <h2 className="mt-3 text-3xl md:text-4xl">Toda la colección, en un solo documento</h2>
-            <p className="mt-3 max-w-xl text-sm text-ink-soft">Descarga directa, sin registro. Si prefieres verlo online, la tienda está siempre actualizada con precio y disponibilidad.</p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {hasCatalog && <a href="/catalogo-2025.pdf" download className="btn-primary">Descargar catálogo</a>}
-            <Link href="/tienda" className="btn-outline">Ver online</Link>
+      <section className="container-x pb-20 md:pb-32">
+        <div className="relative overflow-hidden rounded-[2rem] bg-night px-7 py-14 text-ivory md:px-16 md:py-20">
+          <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-gold/20 blur-3xl" aria-hidden="true" />
+          <div className="relative grid items-center gap-10 md:grid-cols-[1.3fr_1fr]">
+            <div>
+              <p className="eyebrow-light">Club IWatchWorks</p>
+              <h2 className="mt-4 text-4xl md:text-5xl">Un {RULES.welcomeDiscountPercent}% de bienvenida.<br />Y cada compra suma.</h2>
+              <p className="mt-5 max-w-lg text-ivory/65">Crea tu cuenta gratis: descuento en tu primer reloj, 1 punto por cada euro y canje automático al pagar. Sin cuotas ni letra pequeña.</p>
+            </div>
+            <div className="flex flex-col gap-3 md:items-end">
+              <Link href="/registrarse" className="btn-gold px-9">Unirme al club</Link>
+              <p className="text-xs text-ivory/45">También puedes hacerlo al finalizar tu compra.</p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* CONFIANZA */}
-      <section id="confianza" className="scroll-mt-24 bg-white py-16 md:py-24">
-        <div className="container-x">
-          <div className="mb-12 text-center">
-            <p className="eyebrow">Compra con tranquilidad</p>
-            <h2 className="mt-3 text-4xl md:text-5xl">Tu confianza es nuestra prioridad</h2>
-            <div className="divider-gold mt-6" />
+      {/* OPINIONES */}
+      {reviews.length > 0 && (
+        <section id="opiniones" className="bg-stone py-20 md:py-28">
+          <div className="container-x">
+            <p className="eyebrow text-center">Compras verificadas</p>
+            <h2 className="mt-4 text-center text-4xl md:text-5xl">Lo que nos cuentan</h2>
+            <div className="mt-14 grid gap-6 md:grid-cols-3">
+              {reviews.map((r) => (
+                <figure key={r.id} className="rounded-3xl bg-ivory p-8">
+                  <div className="flex text-gold">{[1, 2, 3, 4, 5].map((i) => <StarIcon key={i} filled={i <= r.rating} />)}</div>
+                  <blockquote className="mt-5 text-lg leading-relaxed">“{r.text}”</blockquote>
+                  <figcaption className="mt-6 text-sm text-ink-muted">{r.name}{r.city ? ` · ${r.city}` : ""}</figcaption>
+                </figure>
+              ))}
+            </div>
           </div>
-          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
-            {TRUST.map(({ icon: Icon, title, text }) => (
-              <div key={title} className="text-center">
-                <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-gold-light text-gold-dark">
-                  <Icon className="h-6 w-6" />
-                </span>
-                <h3 className="mt-5 text-2xl">{title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-ink-soft">{text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* RESEÑAS */}
-      <section id="resenas" className="container-x scroll-mt-24 py-16 md:py-24">
-        <div className="mb-12 text-center">
-          <p className="eyebrow">Opiniones verificadas</p>
-          <h2 className="mt-3 text-4xl md:text-5xl">Lo que dicen nuestros clientes</h2>
-          {reviews.length > 0 && (
-            <p className="mt-4 flex items-center justify-center gap-2 text-sm text-ink-soft">
-              <span className="flex text-gold">{[1, 2, 3, 4, 5].map((i) => <StarIcon key={i} filled={i <= Math.round(avg)} />)}</span>
-              {avg.toFixed(1)} de 5 · {reviews.length} opiniones
-            </p>
-          )}
-        </div>
-        {reviews.length ? (
-          <div className="grid gap-6 md:grid-cols-3">
-            {reviews.map((r) => (
-              <figure key={r.id} className="card p-7">
-                <div className="flex text-gold">{[1, 2, 3, 4, 5].map((i) => <StarIcon key={i} filled={i <= r.rating} />)}</div>
-                <blockquote className="mt-4 font-serif text-xl leading-snug">“{r.text}”</blockquote>
-                <figcaption className="mt-5 text-xs uppercase tracking-widest text-ink-muted">
-                  {r.name}{r.city ? ` · ${r.city}` : ""}{r.product ? ` · ${r.product}` : ""}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-sm text-ink-soft">Las opiniones de compras verificadas aparecerán aquí.</p>
-        )}
-      </section>
-
-      {/* FAQ */}
-      <section id="faq" className="scroll-mt-24 bg-white py-16 md:py-24">
-        <div className="container-x max-w-3xl">
-          <div className="mb-10 text-center">
-            <p className="eyebrow">Resolvemos tus dudas</p>
-            <h2 className="mt-3 text-4xl md:text-5xl">Preguntas frecuentes</h2>
-          </div>
-          <div className="divide-y divide-line border-y border-line">
+      {/* PREGUNTAS + CONTACTO */}
+      <section className="container-x grid gap-16 py-20 md:py-32 lg:grid-cols-2 lg:gap-24">
+        <div id="preguntas" className="scroll-mt-24">
+          <p className="eyebrow">Preguntas frecuentes</p>
+          <h2 className="mt-4 text-4xl md:text-5xl">Antes de decidir</h2>
+          <div className="mt-10 divide-y divide-line border-y border-line">
             {FAQ.map((f) => (
-              <details key={f.q} className="group py-5">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-serif text-xl">
+              <details key={f.q} className="group py-6">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-6 text-lg font-medium">
                   {f.q}
-                  <span className="text-2xl text-gold-dark transition group-open:rotate-45">+</span>
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line text-lg leading-none text-gold-dark transition group-open:rotate-45">+</span>
                 </summary>
-                <p className="mt-3 text-sm leading-relaxed text-ink-soft">{f.a}</p>
+                <p className="mt-4 max-w-xl leading-relaxed text-ink-soft">{f.a}</p>
               </details>
             ))}
           </div>
         </div>
-      </section>
-
-      {/* CONTACTO */}
-      <section id="contacto" className="container-x scroll-mt-24 py-16 md:py-24">
-        <div className="grid gap-12 md:grid-cols-[1fr_1.3fr]">
-          <div>
-            <p className="eyebrow">Hablemos</p>
-            <h2 className="mt-3 text-4xl md:text-5xl">Contáctanos</h2>
-            <p className="mt-4 text-ink-soft">¿Buscas un modelo concreto o tienes dudas antes de comprar? Te respondemos personalmente.</p>
-            <a
-              href={`https://wa.me/${SITE.whatsapp}?text=${encodeURIComponent("Hola, estoy interesado en un reloj")}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn mt-8 bg-[#25D366] text-white hover:bg-[#1ebe5a]"
-            >
-              <WhatsappIcon /> Escríbenos por WhatsApp
-            </a>
-            <div className="mt-10">
-              <p className="eyebrow">Horario de atención</p>
-              <ul className="mt-3 space-y-1 text-sm text-ink-soft">{SITE.hours.map((h) => <li key={h}>{h}</li>)}</ul>
-            </div>
-          </div>
-          <div className="card p-6 md:p-10">
+        <div id="contacto" className="scroll-mt-24">
+          <p className="eyebrow">Contacto</p>
+          <h2 className="mt-4 text-4xl md:text-5xl">Hablemos</h2>
+          <p className="mt-5 text-ink-soft">¿Buscas una referencia concreta o quieres consejo? Te responde una persona, normalmente en el mismo día.</p>
+          <a
+            href={`https://wa.me/${SITE.whatsapp}?text=${encodeURIComponent("Hola, me gustaría información sobre un reloj")}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn mt-7 bg-[#1f9e55] text-white hover:bg-[#188a49]"
+          >
+            <WhatsappIcon /> Escríbenos por WhatsApp
+          </a>
+          <p className="mt-4 text-sm text-ink-muted">{SITE.hours.join(" · ")}</p>
+          <div className="card mt-10 p-6 md:p-8">
             <ContactForm />
           </div>
         </div>

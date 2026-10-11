@@ -57,6 +57,7 @@ model Product {
   lowStockThreshold Int      @default(2)
   images            String   @default("[]") // JSON string[]
   specs             String   @default("{}") // JSON Record<string,string>
+  artwork           String   @default("{}") // JSON: estilo de la ilustración cuando no hay foto
   featured          Boolean  @default(false)
   active            Boolean  @default(true)
   createdAt         DateTime @default(now())
@@ -197,4 +198,10 @@ model PasswordReset {
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime @default(now())
+}
+
+model SiteMeta {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
 }

@@ -2,9 +2,9 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const db = new PrismaClient();
-const cdn = (path: string) => `https://res.cloudinary.com/djg9xipqe/image/upload/f_auto,q_auto,w_1400/${path}`;
 
 // Precios de ejemplo: ajústalos desde el panel de administración.
+// Sin fotos: la web muestra una ilustración de estudio hasta que subas las tuyas.
 const products = [
   {
     slug: "seiko-5-sports-gmt-ssk003k1",
@@ -15,37 +15,37 @@ const products = [
     price: 34900,
     stock: 3,
     featured: true,
-    images: [cdn("v1761477994/seiko-seiko-5-ssk003k1-13967034_aooruw.jpg")],
+    artwork: { style: "gmt", dial: "#121212", bezel: ["#2A2A2A", "#121212"] },
     description:
-      "El primer GMT mecánico de la colección Seiko 5 Sports. Esfera negra, bisel bicolor de 24 horas y calibre automático 4R34 con segunda zona horaria real. Un reloj de viaje robusto y versátil.",
+      "Un viajero nato. Segundo huso horario de lectura inmediata, bisel giratorio de 24 horas y un calibre automático que se alimenta del movimiento de tu muñeca. Robusto en el día a día, preciso cuando cruzas fronteras.",
     specs: {
-      Movimiento: "Automático Seiko 4R34 (GMT)",
+      Movimiento: "Automático, calibre 4R34 con función GMT",
       Reserva: "41 horas",
-      Caja: "42,5 mm · acero inoxidable",
+      Caja: "42,5 mm, acero inoxidable",
       Cristal: "Hardlex",
       Hermeticidad: "100 m",
-      Correa: "Brazalete de acero",
+      Brazalete: "Acero inoxidable",
     },
   },
   {
     slug: "seiko-prospex-speedtimer-ssc911p1",
-    name: "Prospex Speedtimer Solar",
+    name: "Prospex Speedtimer",
     brand: "Seiko",
     reference: "SSC911P1",
     category: "Cronógrafo",
     price: 59000,
     stock: 2,
     featured: true,
-    images: [cdn("v1761217241/SSC911P1_th2gtl.jpg")],
+    artwork: { style: "chrono", dial: "#F3F0E7", bezel: ["#151515", "#151515"] },
     description:
-      "Cronógrafo solar inspirado en el legado deportivo de Seiko. Esfera blanca tipo panda con subesferas negras, taquímetro en el bisel y una lectura impecable.",
+      "Herencia de cronometraje deportivo en clave contemporánea. Esfera clara de alto contraste, tres contadores y carga por luz: cualquier fuente luminosa lo mantiene en marcha durante meses.",
     specs: {
-      Movimiento: "Solar Seiko V192 (cronógrafo)",
-      Reserva: "6 meses con carga completa",
-      Caja: "39 mm · acero inoxidable",
+      Movimiento: "Cronógrafo solar, calibre V192",
+      Autonomía: "Hasta 6 meses con carga completa",
+      Caja: "39 mm, acero inoxidable",
       Cristal: "Zafiro",
       Hermeticidad: "100 m",
-      Correa: "Brazalete de acero",
+      Brazalete: "Acero inoxidable",
     },
   },
   {
@@ -57,16 +57,16 @@ const products = [
     price: 38900,
     stock: 1,
     featured: true,
-    images: [cdn("v1761506066/SSK035K1_ppe4kb.jpg")],
+    artwork: { style: "gmt", dial: "#1B2233", bezel: ["#6B1F24", "#1E2B44"] },
     description:
-      "Versión especial del GMT de Seiko 5 Sports con un acabado que no pasa desapercibido. Calibre automático 4R34 y bisel de 24 horas para seguir dos husos horarios.",
+      "Dos tonos en el bisel para distinguir el día de la noche en el segundo huso. Un GMT con carácter, pensado para quien vive entre dos ciudades.",
     specs: {
-      Movimiento: "Automático Seiko 4R34 (GMT)",
+      Movimiento: "Automático, calibre 4R34 con función GMT",
       Reserva: "41 horas",
-      Caja: "42,5 mm · acero inoxidable",
+      Caja: "42,5 mm, acero inoxidable",
       Cristal: "Hardlex",
       Hermeticidad: "100 m",
-      Correa: "Brazalete de acero",
+      Brazalete: "Acero inoxidable",
     },
   },
   {
@@ -78,16 +78,16 @@ const products = [
     price: 34900,
     stock: 4,
     featured: false,
-    images: [cdn("v1761506078/SSK001K1_ofw6mq.jpg")],
+    artwork: { style: "gmt", dial: "#0E0E0E", bezel: ["#151515", "#151515"] },
     description:
-      "El GMT de Seiko 5 Sports en su versión más clásica, con esfera negra y bisel negro de 24 horas. Automático, fiable y preparado para el día a día.",
+      "La versión más sobria: negro sobre negro, lectura limpia y una presencia discreta que acompaña igual con traje que en fin de semana.",
     specs: {
-      Movimiento: "Automático Seiko 4R34 (GMT)",
+      Movimiento: "Automático, calibre 4R34 con función GMT",
       Reserva: "41 horas",
-      Caja: "42,5 mm · acero inoxidable",
+      Caja: "42,5 mm, acero inoxidable",
       Cristal: "Hardlex",
       Hermeticidad: "100 m",
-      Correa: "Brazalete de acero",
+      Brazalete: "Acero inoxidable",
     },
   },
 ];
@@ -95,7 +95,7 @@ const products = [
 async function main() {
   const email = (process.env.ADMIN_EMAIL || "admin@iwatchworks.com").toLowerCase();
   const password = process.env.ADMIN_PASSWORD;
-  if (!password || password.length < 10) throw new Error("Define ADMIN_PASSWORD (mín. 10 caracteres) en .env");
+  if (!password || password.length < 10) throw new Error("Define ADMIN_PASSWORD (mín. 10 caracteres) en las variables de entorno");
   await db.user.upsert({
     where: { email },
     create: { email, name: "Administración", role: "ADMIN", passwordHash: await bcrypt.hash(password, 12) },
@@ -103,15 +103,34 @@ async function main() {
   });
 
   for (const p of products) {
-    const { images, specs, ...rest } = p;
+    const { artwork, specs, ...rest } = p;
     const exists = await db.product.findUnique({ where: { slug: p.slug } });
     if (exists) continue;
     const created = await db.product.create({
-      data: { ...rest, images: JSON.stringify(images), specs: JSON.stringify(specs) },
+      data: { ...rest, images: "[]", specs: JSON.stringify(specs), artwork: JSON.stringify(artwork) },
     });
     await db.stockMovement.create({
       data: { productId: created.id, change: p.stock, stockAfter: p.stock, reason: "RESTOCK", note: "Stock inicial", actor: "seed" },
     });
+  }
+
+  // Rediseño v2: textos nuevos, sin las fotos antiguas. Se aplica una sola vez.
+  const done = await db.siteMeta.findUnique({ where: { key: "content_v2" } });
+  if (!done) {
+    for (const p of products) {
+      await db.product.updateMany({
+        where: { slug: p.slug },
+        data: {
+          name: p.name,
+          description: p.description,
+          specs: JSON.stringify(p.specs),
+          artwork: JSON.stringify(p.artwork),
+          images: "[]",
+        },
+      });
+    }
+    await db.siteMeta.create({ data: { key: "content_v2", value: new Date().toISOString() } });
+    console.log("Contenido v2 aplicado.");
   }
   console.log(`Seed completado. Admin: ${email}`);
 }
