@@ -5,6 +5,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { cookies } from "next/headers";
 import { randomBytes } from "crypto";
+import { sendMail } from "@/lib/email";
+import { welcomeEmail } from "@/lib/email-templates";
 import { createSession, destroySession, getCurrentUser, hashPassword, hashToken, verifyPassword } from "@/lib/auth";
 import { verifyTotp } from "@/lib/totp";
 import { audit } from "@/lib/audit";
@@ -99,6 +101,7 @@ export async function register(_: AuthState, form: FormData): Promise<AuthState>
   });
   if (d.marketing) await db.newsletterSubscriber.upsert({ where: { email: d.email }, create: { email: d.email }, update: {} });
   await createSession(user.id);
+  await sendMail({ to: user.email, ...welcomeEmail(user) });
   redirect(safeNext(form.get("next"), "/cuenta?bienvenida=1"));
 }
 
@@ -151,13 +154,9 @@ export async function requestPasswordReset(_: AuthState, form: FormData): Promis
     await db.passwordReset.create({
       data: { userId: user.id, tokenHash: createHash("sha256").update(token).digest("hex"), expiresAt: new Date(Date.now() + 3600_000) },
     });
-    const { sendMail } = await import("@/lib/email");
     const { SITE } = await import("@/lib/config");
-    await sendMail({
-      to: user.email,
-      subject: "Restablecer tu contraseña · IWatchWorks",
-      html: `<p>Hola ${user.name.split(" ")[0]}, pulsa el enlace para elegir una nueva contraseña (válido 1 hora):</p><p><a href="${SITE.url}/recuperar/${token}">Restablecer contraseña</a></p><p>Si no lo has pedido tú, ignora este email.</p>`,
-    });
+    const { passwordResetEmail } = await import("@/lib/email-templates");
+    await sendMail({ to: user.email, ...passwordResetEmail(user, `${SITE.url}/recuperar/${token}`) });
     if (!process.env.RESEND_API_KEY && process.env.NODE_ENV !== "production") console.info(`[email] enlace: ${SITE.url}/recuperar/${token}`);
   }
   // Misma respuesta exista o no la cuenta

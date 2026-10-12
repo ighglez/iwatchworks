@@ -12,6 +12,7 @@ import { verifyTotp, newTotpSecret, otpauthUrl } from "@/lib/totp";
 import { audit } from "@/lib/audit";
 import { rateLimit } from "@/lib/rate-limit";
 import { sendMail, escapeHtml } from "@/lib/email";
+import { adminAlertEmail } from "@/lib/email-templates";
 import { SITE } from "@/lib/config";
 import { formatPhone, normalizePhone } from "@/lib/contact";
 import { cancelOrder, markOrderPaid, notifyShipped } from "@/lib/orders";
@@ -69,7 +70,7 @@ export async function adminCancelOrder(form: FormData) {
   const admin = await requireAdmin();
   const id = String(form.get("id"));
   const reason = String(form.get("reason") || "Cancelado por la tienda").slice(0, 200);
-  const o = await cancelOrder(id, { reason, actor: admin.email, refund: form.get("refund") === "on" });
+  const o = await cancelOrder(id, { reason, actor: admin.email, refund: form.get("refund") === "on", notify: "store" });
   await audit(admin.email, "Pedido cancelado", `${o?.number ?? id} · ${reason}`);
   revalidatePath(`/admin/pedidos/${id}`);
 }
@@ -279,8 +280,10 @@ export async function saveBankDetails(_: AdminState, form: FormData): Promise<Ad
   for (const t of to) {
     await sendMail({
       to: t,
-      subject: "Aviso de seguridad: datos bancarios cambiados · IWatchWorks",
-      html: `<p>Se han cambiado los datos bancarios de la tienda desde el panel (${escapeHtml(admin.email)}).</p><p>IBAN nuevo: <b>${escapeHtml(mask(iban))}</b><br>Titular: <b>${escapeHtml(holder)}</b></p><p>Si no has sido tú, entra en el panel, corrige los datos y cambia tu contraseña de inmediato.</p>`,
+      ...adminAlertEmail(
+        "Datos bancarios cambiados",
+        `Se han cambiado los datos bancarios de la tienda desde el panel (${escapeHtml(admin.email)}).<br><br>IBAN nuevo: <b>${escapeHtml(mask(iban))}</b><br>Titular: <b>${escapeHtml(holder)}</b><br><br>Si no has sido tú, entra en el panel, corrige los datos y cambia tu contraseña de inmediato.`,
+      ),
     });
   }
   revalidatePath("/admin");
@@ -299,6 +302,15 @@ export async function saveWhatsapp(_: AdminState, form: FormData): Promise<Admin
   await audit(admin.email, "Número de WhatsApp cambiado", formatPhone(number));
   revalidatePath("/", "layout");
   return { ok: true, message: `Guardado. Los botones de WhatsApp ya abren ${formatPhone(number)}.` };
+}
+
+export async function sendTestEmail(_: AdminState, form: FormData): Promise<AdminState> {
+  const admin = await requireAdmin();
+  if (!(await rateLimit(`testmail:${admin.id}`, 10, 3600))) return { error: "Has enviado muchas pruebas seguidas. Espera un rato." };
+  const { EMAIL_KINDS, sampleEmail } = await import("@/lib/email-samples");
+  const kind = EMAIL_KINDS.find(([k]) => k === form.get("kind"))?.[0] ?? "bienvenida";
+  const res = await sendMail({ to: admin.email, ...(await sampleEmail(kind)) });
+  return res.ok ? { ok: true, message: `Enviado a ${admin.email}. Revisa también la carpeta de spam.` } : { error: res.error };
 }
 
 /* ---------- Verificación en dos pasos ---------- */

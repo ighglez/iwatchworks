@@ -3,7 +3,8 @@ import { randomBytes } from "crypto";
 import { db } from "./db";
 import { RULES, SITE } from "./config";
 import type { Quote } from "./pricing";
-import { sendMail, escapeHtml } from "./email";
+import { sendMail } from "./email";
+import { cancelledEmail, paidEmail, shippedEmail, transferEmail } from "./email-templates";
 import { euros } from "./money";
 import { getStripe, stripeEnabled } from "./stripe";
 import { formatIban, getBankDetails, transferDeadline } from "./payments";
@@ -166,7 +167,7 @@ export async function markOrderPaid(orderId: string, paymentIntent?: string | nu
 }
 
 /** Cancela un pedido devolviendo stock y puntos. Si estaba pagado y hay Stripe, reembolsa. */
-export async function cancelOrder(orderId: string, opts: { reason: string; actor: string; refund?: boolean }) {
+export async function cancelOrder(orderId: string, opts: { reason: string; actor: string; refund?: boolean; notify?: "expired" | "store" }) {
   const order = await db.order.findUnique({ where: { id: orderId }, include: { items: true } });
   if (!order || order.status === "CANCELLED" || order.status === "REFUNDED") return order;
   const wasPaid = PAID_STATES.includes(order.status);
@@ -175,12 +176,14 @@ export async function cancelOrder(orderId: string, opts: { reason: string; actor
     await getStripe().refunds.create({ payment_intent: order.stripePaymentIntent });
   }
 
-  return db.$transaction(async (tx) => {
+  let changed = false;
+  const result = await db.$transaction(async (tx) => {
     const res = await tx.order.updateMany({
       where: { id: orderId, status: order.status },
       data: { status: wasPaid ? "REFUNDED" : "CANCELLED", cancelledAt: new Date() },
     });
     if (res.count !== 1) return order;
+    changed = true;
 
     for (const it of order.items) {
       if (!it.productId) continue;
@@ -212,6 +215,8 @@ export async function cancelOrder(orderId: string, opts: { reason: string; actor
     });
     return tx.order.findUnique({ where: { id: orderId } });
   });
+  if (changed && opts.notify) void sendMail({ to: order.email, ...cancelledEmail(order, opts.notify) });
+  return result;
 }
 
 /** Libera el stock de pedidos que nunca se pagaron (tarjeta: minutos; transferencia: días). */
@@ -230,7 +235,7 @@ export async function releaseExpiredReservations() {
   });
   for (const o of stale) {
     const reason = o.paymentProvider === "transfer" ? `Transferencia no recibida en ${RULES.transferDays} días` : "Pago no completado a tiempo";
-    await cancelOrder(o.id, { reason, actor: "sistema" });
+    await cancelOrder(o.id, { reason, actor: "sistema", notify: o.paymentProvider === "transfer" ? "expired" : undefined });
   }
   return stale.length;
 }
@@ -241,50 +246,13 @@ export async function sendTransferInstructions(orderId: string) {
   if (!order) return;
   const bank = await getBankDetails();
   const deadline = transferDeadline(order.createdAt).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Madrid" });
-  const row = (k: string, v: string) => `<tr><td style="padding:6px 0;color:#7C7972">${k}</td><td style="padding:6px 0;text-align:right"><b>${escapeHtml(v)}</b></td></tr>`;
-  const items = order.items.map((i) => `<li>${escapeHtml(i.name)} × ${i.quantity}</li>`).join("");
-  await sendMail({
-    to: order.email,
-    subject: `Pedido ${order.number}: datos para la transferencia · ${SITE.name}`,
-    html: `<div style="font-family:Helvetica,Arial,sans-serif;color:#141413;max-width:560px">
-      <h1 style="font-weight:500">Tu reloj está reservado</h1>
-      <p>Gracias, ${escapeHtml(order.name.split(" ")[0])}. Para completar el pedido, haz una transferencia con estos datos antes del <b>${deadline}</b>:</p>
-      <table width="100%" style="border-top:1px solid #E2DFD6;border-bottom:1px solid #E2DFD6;margin:16px 0">
-        ${row("Titular", bank.holder)}${row("IBAN", formatIban(bank.iban))}${bank.bic ? row("BIC/SWIFT", bank.bic) : ""}${bank.bank ? row("Banco", bank.bank) : ""}
-        ${row("Importe", euros(order.total))}${row("Concepto", order.number)}
-      </table>
-      <p style="background:#F3F0EA;padding:12px;border-radius:10px;font-size:13px"><b>Por tu seguridad:</b> nunca te pediremos que pagues a otra cuenta por email, WhatsApp o teléfono. Antes de transferir, comprueba que el IBAN coincide con el que aparece en tu pedido en nuestra web.</p>
-      <p>Es importante indicar <b>${order.number}</b> como concepto. En cuanto recibamos el ingreso te enviaremos la confirmación y prepararemos tu pedido.</p>
-      <ul>${items}</ul>
-      <p><a href="${SITE.url}/pedido/${order.number}?t=${order.accessToken}" style="color:#7A1F2E">Ver tu pedido y los datos de pago</a></p>
-    </div>`,
-  });
+  await sendMail({ to: order.email, ...transferEmail(order, { ...bank, iban: formatIban(bank.iban) }, deadline) });
 }
 
-async function sendOrderConfirmation(order: { number: string; email: string; name: string; total: number; accessToken: string; items: { name: string; quantity: number; price: number }[] }) {
-  const rows = order.items
-    .map((i) => `<tr><td>${escapeHtml(i.name)} × ${i.quantity}</td><td style="text-align:right">${euros(i.price * i.quantity)}</td></tr>`)
-    .join("");
-  await sendMail({
-    to: order.email,
-    subject: `Pedido ${order.number} confirmado · ${SITE.name}`,
-    html: `<div style="font-family:Georgia,serif;color:#1a1a1a">
-      <h1 style="font-weight:400">Gracias, ${escapeHtml(order.name.split(" ")[0])}</h1>
-      <p>Hemos recibido tu pago. Prepararemos tu reloj con el máximo cuidado y te avisaremos al enviarlo con su número de seguimiento.</p>
-      <table width="100%">${rows}<tr><td><b>Total</b></td><td style="text-align:right"><b>${euros(order.total)}</b></td></tr></table>
-      <p><a href="${SITE.url}/pedido/${order.number}?t=${order.accessToken}" style="color:#7A1F2E">Ver el estado de tu pedido</a></p>
-    </div>`,
-  });
+async function sendOrderConfirmation(order: Parameters<typeof paidEmail>[0]) {
+  await sendMail({ to: order.email, ...paidEmail(order) });
 }
 
 export async function notifyShipped(order: { number: string; email: string; name: string; accessToken: string; carrier: string | null; trackingNumber: string | null }) {
-  await sendMail({
-    to: order.email,
-    subject: `Tu pedido ${order.number} está en camino`,
-    html: `<div style="font-family:Georgia,serif;color:#1a1a1a">
-      <h1 style="font-weight:400">Tu reloj ya está en camino</h1>
-      <p>Envío asegurado con ${escapeHtml(order.carrier || "nuestra agencia")}. Seguimiento: <b>${escapeHtml(order.trackingNumber || "-")}</b></p>
-      <p><a href="${SITE.url}/pedido/${order.number}?t=${order.accessToken}" style="color:#7A1F2E">Ver pedido</a></p>
-    </div>`,
-  });
+  await sendMail({ to: order.email, ...shippedEmail(order) });
 }

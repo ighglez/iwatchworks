@@ -9,6 +9,8 @@ import { createPendingOrder, releaseExpiredReservations, StockError, cancelOrder
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { getStripe } from "@/lib/stripe";
 import { paymentMethod } from "@/lib/payments";
+import { sendMail } from "@/lib/email";
+import { welcomeEmail } from "@/lib/email-templates";
 import { RULES, SITE } from "@/lib/config";
 
 export type CheckoutState = { error?: string; fieldErrors?: Record<string, string> } | null;
@@ -92,6 +94,7 @@ export async function placeOrder(_: CheckoutState, form: FormData): Promise<Chec
       },
     });
     await createSession(user.id);
+    void sendMail({ to: user.email, ...welcomeEmail(user, { fromCheckout: true }) });
   } else if (user && d.saveAddress) {
     await db.user.update({
       where: { id: user.id },

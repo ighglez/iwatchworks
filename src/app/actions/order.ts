@@ -8,6 +8,8 @@ import { cancelOrder, markOrderPaid } from "@/lib/orders";
 import { demoPaymentsEnabled } from "@/lib/stripe";
 import { createSession, hashPassword } from "@/lib/auth";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { sendMail } from "@/lib/email";
+import { welcomeEmail } from "@/lib/email-templates";
 
 export async function demoPay(form: FormData) {
   if (!demoPaymentsEnabled()) throw new Error("Pagos de demostración desactivados");
@@ -57,6 +59,7 @@ export async function claimOrderAccount(_: ClaimState, form: FormData): Promise<
     return u;
   });
   await createSession(user.id);
+  void sendMail({ to: user.email, ...welcomeEmail(user, { claimedPoints: points }) });
   return { ok: true };
 }
 
